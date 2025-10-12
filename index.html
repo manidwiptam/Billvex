@@ -491,10 +491,25 @@
     function escapeHtml(s){ if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
     // logo + color
-    document.getElementById('logoInput').addEventListener('change', (e)=>{
-      const f = e.target.files[0]; if (!f) return;
-      const url = URL.createObjectURL(f); const img = document.createElement('img'); img.onload = ()=> URL.revokeObjectURL(url); img.src = url;
-      const box = document.getElementById('logoBox'); box.innerHTML = ''; box.appendChild(img);
+    // --- NEW: FileReader => dataURL approach to guarantee image embedded for html2canvas ---
+    document.getElementById('logoInput').addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const url = ev.target.result; // data URL (base64)
+        const img = document.createElement('img');
+        img.onload = () => {
+          const box = document.getElementById('logoBox');
+          box.innerHTML = '';
+          box.appendChild(img);
+        };
+        img.onerror = () => {
+          console.warn('Logo image failed to load');
+        };
+        img.src = url;
+      };
+      reader.readAsDataURL(f);
     });
     document.getElementById('colorPicker').addEventListener('input', (e)=> document.documentElement.style.setProperty('--blue', e.target.value));
 
@@ -546,7 +561,23 @@
     // initialize payment UI (default select value)
     updatePaymentTypeUI();
 
-    // Client-side PDF generation
+    // Helper to wait for images inside a container to finish loading
+    function waitForImages(container) {
+      const imgs = Array.from(container.querySelectorAll('img'));
+      const promises = imgs.map(img => {
+        if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+        return new Promise((res) => {
+          const done = () => res();
+          img.addEventListener('load', done, { once: true });
+          img.addEventListener('error', done, { once: true }); // resolve on error so export continues
+          // safety: if image stuck, timeout after 2s
+          setTimeout(done, 2000);
+        });
+      });
+      return Promise.all(promises);
+    }
+
+    // Client-side PDF generation (now waits for images)
     document.getElementById('downloadPdfBtn').addEventListener('click', async ()=>{
       const btn = document.getElementById('downloadPdfBtn');
       btn.disabled = true; btn.textContent = 'Rendering...';
@@ -556,6 +587,10 @@
 
       try {
         const invoiceEl = document.getElementById('invoiceRoot');
+
+        // WAIT for images (including uploaded logo) to load before capturing
+        await waitForImages(invoiceEl);
+
         const canvas = await html2canvas(invoiceEl, {scale:2, useCORS:true, backgroundColor:'#ffffff'});
         const imgData = canvas.toDataURL('image/png');
         const { jsPDF } = window.jspdf;
