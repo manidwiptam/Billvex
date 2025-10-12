@@ -125,6 +125,10 @@
     .muted{color:var(--muted)}
     .center{display:flex;align-items:center;justify-content:center}
     .small{font-size:12px;color:#666}
+    /* small payment type styling */
+    .payment-row{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+    .payment-row label{font-weight:600;color:#374151}
+    .payment-row select{padding:6px 8px;border-radius:6px;border:1px solid #e6eefc;background:rgba(243,248,255,0.6)}
   </style>
 </head>
 <body>
@@ -257,16 +261,29 @@
           </div>
 
           <div style="width:100%;max-width:520px">
+            <!-- Payment type selector -->
+            <div class="label">Payment Type</div>
+            <div class="payment-row" style="margin-bottom:10px">
+              <label for="paymentType" class="small">Choose:</label>
+              <select id="paymentType" aria-label="Payment Type">
+                <option value="Cash" selected>Cash</option>
+                <option value="Online">Online</option>
+              </select>
+            </div>
+
             <div class="label">Bank Details</div>
-            <div class="bank-inline" style="padding:12px;border-radius:10px;border:1px solid var(--card-border);background:var(--card-bg)">
-              <span class="label">Bank Name:</span>
-              <div id="bankName" class="field editable is-empty" contenteditable data-placeholder="SBI"></div>
+            <!-- Wrap bank details so we can hide/show easily -->
+            <div id="bankSection" style="padding:12px;border-radius:10px;border:1px solid var(--card-border);background:var(--card-bg)">
+              <div class="bank-inline" style="padding:0">
+                <span class="label">Bank Name:</span>
+                <div id="bankName" class="field editable is-empty" contenteditable data-placeholder="SBI"></div>
 
-              <span class="label">A/C:</span>
-              <div id="bankAccount" class="field editable is-empty" contenteditable data-placeholder="1234567890"></div>
+                <span class="label">A/C:</span>
+                <div id="bankAccount" class="field editable is-empty" contenteditable data-placeholder="1234567890"></div>
 
-              <span class="label">IFSC:</span>
-              <div id="bankIfsc" class="field editable is-empty" contenteditable data-placeholder="SBIN0001234"></div>
+                <span class="label">IFSC:</span>
+                <div id="bankIfsc" class="field editable is-empty" contenteditable data-placeholder="SBIN0001234"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -481,7 +498,38 @@
     });
     document.getElementById('colorPicker').addEventListener('input', (e)=> document.documentElement.style.setProperty('--blue', e.target.value));
 
-    // buttons
+    // Payment type logic
+    const paymentSelect = document.getElementById('paymentType');
+    const bankSection = document.getElementById('bankSection');
+    const bankFields = Array.from(bankSection.querySelectorAll('.field'));
+
+    function updatePaymentTypeUI(){
+      const val = paymentSelect.value;
+      if (val === 'Cash') {
+        // hide bank section, clear & disable bank fields
+        bankSection.style.display = 'none';
+        bankSection.setAttribute('aria-hidden','true');
+        bankFields.forEach(f=>{
+          f.textContent = '';
+          f.classList.add('is-empty');
+          f.setAttribute('contenteditable','false');
+        });
+      } else {
+        // show bank section and enable fields
+        bankSection.style.display = '';
+        bankSection.setAttribute('aria-hidden','false');
+        bankFields.forEach(f=>{
+          f.setAttribute('contenteditable','true');
+          updateEmptyState(f);
+        });
+        // focus first bank field for convenience
+        setTimeout(()=> { bankFields[0]?.focus?.(); }, 40);
+      }
+    }
+
+    paymentSelect.addEventListener('change', updatePaymentTypeUI);
+
+    // buttons & controls
     document.getElementById('addRowBtn').addEventListener('click', ()=> addRow({}));
     document.getElementById('clearRowsBtn').addEventListener('click', ()=> { if (confirm('Clear all rows?')) clearRows(); });
     document.getElementById('resetBtn').addEventListener('click', ()=> { if (confirm('Reset all fields to default?')) location.reload(); });
@@ -494,6 +542,9 @@
     addRow({}); addRow({});
     initPlaceholders();
     applyTaxSettings();
+
+    // initialize payment UI (default select value)
+    updatePaymentTypeUI();
 
     // Client-side PDF generation
     document.getElementById('downloadPdfBtn').addEventListener('click', async ()=>{
