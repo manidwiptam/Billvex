@@ -1,0 +1,529 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Billing Format</title>
+  <style>
+    :root{
+      --blue:#1f6feb;
+      --muted:#9aa4b2;
+      --card-bg:#fff;
+      --card-border:#e6eefc;
+      --accent: #2563eb;
+      --ease: cubic-bezier(.2,.9,.2,1);
+    }
+    *{box-sizing:border-box}
+    body{font-family: Inter, Arial, Helvetica, sans-serif; background:#f3f6fb; margin:0; padding:18px; color:#111}
+    .wrap{max-width:1100px;margin:0 auto}
+    .controls{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+    .controls .spacer{flex:1}
+    .toolbar{display:flex;gap:8px}
+    button{padding:8px 12px;border:none;border-radius:8px;background:var(--blue);color:white;cursor:pointer;font-weight:600;transition:transform .18s var(--ease), box-shadow .18s var(--ease)}
+    button:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(31,111,235,0.12)}
+    button.ghost{background:transparent;color:var(--blue);border:1px solid rgba(31,111,235,0.12)}
+    .card{background:var(--card-bg);border-radius:12px;padding:14px;margin-bottom:14px;box-shadow:0 6px 18px rgba(20,40,80,0.04);border:1px solid var(--card-border);transition:transform .2s var(--ease), box-shadow .2s var(--ease)}
+    .card:hover{transform:translateY(-3px)}
+
+    /* header */
+    .invoice-header{display:flex;gap:18px;align-items:stretch}
+    .logo-box{width:110px;height:110px;border:2px dashed #d8e3f7;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff;flex:0 0 110px;transition:box-shadow .18s var(--ease)}
+    .logo-box img{max-width:100%;max-height:100%;display:block}
+    .company-block{flex:1;display:flex;flex-direction:column;justify-content:center;padding:6px}
+    .company-block h1{margin:0;font-size:22px;color:#6b7280;font-weight:700;letter-spacing:1px;transition:color .15s var(--ease)}
+    .company-block p{margin:6px 0 0 0;color:#6b7280;font-size:13px}
+    .header-right{width:320px;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-end;gap:8px}
+    .tax-badge{background:var(--blue);color:white;padding:12px 14px;border-radius:8px;font-weight:800;display:inline-block;transform-origin:center;animation:badgePulse 2.8s infinite ease-in-out}
+    @keyframes badgePulse{0%{transform:translateY(0)}50%{transform:translateY(-3px)}100%{transform:translateY(0)}}
+    .meta-list{width:100%;text-align:right}
+    .meta-list .label{display:block;color:#9aa4b2;font-size:12px}
+    .meta-list .value{font-size:18px;color:#4b5563;font-weight:600;margin-top:6px}
+
+    /* settings row (GST customization) */
+    .settings{display:flex;gap:12px;align-items:center;background:#fff;padding:10px;border-radius:10px;border:1px solid var(--card-border);margin-bottom:12px}
+    .settings label{font-size:13px;color:#374151}
+    .settings input[type="number"]{width:80px;padding:6px;border-radius:6px;border:1px solid #e6eefc;background:rgba(243,248,255,0.6)}
+    .settings .mode{display:flex;gap:8px;align-items:center;margin-left:8px}
+
+    /* boxes */
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    .info-box{padding:14px;border-radius:10px;background:var(--card-bg);border:1px solid var(--card-border);min-height:150px;transition:box-shadow .18s var(--ease)}
+    .info-box .label{color:#374151;font-size:13px;margin-bottom:8px}
+    .info-box .value{font-size:18px;color:#6b7280;font-weight:700}
+
+    /* items */
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    table th, table td{border:1px solid #e6eefc;padding:8px;font-size:13px;vertical-align:middle}
+    table th{background:#f8fbff;font-weight:700}
+    .items input[type="text"], .items input[type="number"]{
+      width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(37,99,235,0.06);background:rgba(243,248,255,0.6);font-size:14px;box-sizing:border-box;transition:box-shadow .12s var(--ease), transform .12s var(--ease);
+    }
+    .items input[type="text"]:focus, .items input[type="number"]:focus{box-shadow:0 6px 18px rgba(37,99,235,0.06);transform:translateY(-2px)}
+    .items input[type="number"]{text-align:right}
+    .rowTotal{ text-align:right; font-weight:600; padding-right:10px }
+    .del-row-btn{background:#eef6ff;border:1px solid #dbeafe;border-radius:8px;padding:8px 10px;cursor:pointer;transition:transform .12s var(--ease)}
+    .del-row-btn:hover{transform:scale(1.06)}
+    .sno{width:44px;text-align:center}
+
+    /* new row animation */
+    tr.new-row{animation:fadeInUp .28s var(--ease) both}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    tr.removing{animation:fadeOut .22s var(--ease) forwards}
+    @keyframes fadeOut{from{opacity:1;height:auto}to{opacity:0;height:0;padding:0;margin:0}}
+
+    .totals-wrap{display:flex;justify-content:flex-end;margin-top:12px}
+    .totals{min-width:260px;border-radius:10px;border:1px solid var(--card-border);background:#fbfdff;padding:12px;transition:box-shadow .15s var(--ease)}
+    .totals .row{display:flex;justify-content:space-between;padding:6px 0}
+
+    .bank-inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .bank-inline .label{font-weight:600;color:#374151;margin-right:6px}
+    .bank-inline .field{min-width:80px;border-bottom:2px solid #e9f2ff;padding:6px 8px;border-radius:6px;background:rgba(243,248,255,0.6);transition:box-shadow .12s var(--ease)}
+    .bank-inline .field:focus{box-shadow:0 6px 18px rgba(37,99,235,0.06)}
+
+    /* placeholders for contenteditable */
+    .editable{min-height:18px;padding:6px;border-radius:6px;background:rgba(243,248,255,0.6);border:1px solid rgba(37,99,235,0.06);transition:box-shadow .12s var(--ease), transform .12s var(--ease)}
+    .editable.is-empty:before{content:attr(data-placeholder);color:var(--muted);pointer-events:none}
+    .editable:focus{outline:2px dashed rgba(37,99,235,0.16);background:#fff;box-shadow:0 6px 18px rgba(37,99,235,0.06);transform:translateY(-2px)}
+
+    /* Make the email & phone slightly larger while typing (only when focused) */
+    #companyEmail:focus, #companyPhone:focus {
+      padding:10px 12px;
+      font-size:15px;
+      min-width:170px;
+      display:inline-block;
+      border-radius:6px;
+      background:#fff;
+      box-shadow:0 8px 20px rgba(37,99,235,0.06);
+      transform:translateY(-2px);
+      transition: all .12s var(--ease);
+    }
+
+    /* Make amount-in-words fixed (non-editable) look consistent */
+    #amountWords {
+      min-height:36px;
+      padding:8px 10px;
+      border-radius:6px;
+      background:rgba(243,248,255,0.6);
+      border:1px solid rgba(37,99,235,0.06);
+      font-size:14px;
+      line-height:1.4;
+    }
+
+    .footer{display:flex;gap:12px;margin-top:12px;align-items:flex-end}
+    .terms{flex:1;padding:12px;border-radius:10px;border:1px solid var(--card-border);background:var(--card-bg)}
+    .signature{width:260px;height:120px;border-radius:10px;border:1px solid var(--card-border);display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card-bg)}
+    .signature .title{font-weight:700;margin-bottom:6px}
+    .signature .for{margin-top:8px;color:#4b5563}
+
+    @media (max-width:880px){
+      .invoice-header{flex-direction:column;align-items:stretch}
+      .header-right{width:100%;align-items:flex-start}
+      .two-col{grid-template-columns:1fr}
+      .signature{width:180px}
+    }
+
+    .muted{color:var(--muted)}
+    .center{display:flex;align-items:center;justify-content:center}
+    .small{font-size:12px;color:#666}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- top controls -->
+    <div class="controls">
+      <label>Logo: <input id="logoInput" type="file" accept="image/*"></label>
+      <label>Header color: <input id="colorPicker" type="color" value="#1f6feb"></label>
+
+      <div class="spacer"></div>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="settings">
+          <label style="font-weight:700;margin-right:6px">Tax mode</label>
+          <div class="mode">
+            <label><input type="radio" name="taxMode" value="cgst" checked> CGST + SGST</label>
+            <label style="margin-left:6px"><input type="radio" name="taxMode" value="igst"> IGST</label>
+          </div>
+          <label style="margin-left:12px">Tax %</label>
+          <input id="taxPercent" type="number" min="0" max="100" step="0.5" value="18">
+          <button id="applyTax" class="ghost" style="margin-left:6px">Apply</button>
+        </div>
+
+        <div class="toolbar">
+          <button id="downloadPdfBtn">Download PDF</button>
+          <button id="resetBtn" class="ghost">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- invoice content -->
+    <div class="card" id="invoiceRoot">
+      <div class="invoice-header">
+        <div class="logo-box" id="logoBox"><span class="muted">Logo</span></div>
+
+        <div class="company-block">
+          <h1 id="companyName" class="editable is-empty" contenteditable data-placeholder="Company Name"></h1>
+          <p id="companyAddress" class="editable is-empty" contenteditable data-placeholder="Address line 1, City, State"></p>
+          <p class="muted" style="margin-top:8px">
+            <span id="companyEmail" class="editable is-empty" contenteditable data-placeholder="email@example.com"></span>
+            <span style="margin:0 8px">|</span>
+            <span id="companyPhone" class="editable is-empty" contenteditable data-placeholder="Mobile number"></span>
+          </p>
+        </div>
+
+        <div class="header-right">
+          <div class="tax-badge" id="taxBadge">TAX INVOICE</div>
+          <div class="meta-list">
+            <div><span class="label">Invoice No</span><div id="invoiceNo" class="value editable is-empty" contenteditable data-placeholder="Invoice No (e.g. CCL-2)"></div></div>
+            <div style="margin-top:8px"><span class="label">Date</span><div id="invoiceDate" class="value editable is-empty" contenteditable data-placeholder="YYYY-MM-DD"></div></div>
+            <div style="margin-top:8px"><span class="label">Sale Type</span><div id="saleType" class="value editable is-empty" contenteditable data-placeholder="INTERSTATE SALE"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-top:12px">
+        <div class="info-box">
+          <div class="label">Party Name / Buyer</div>
+          <div id="buyerName" class="value editable is-empty" contenteditable data-placeholder="Buyer name"></div>
+
+          <div style="height:10px"></div>
+          <div class="label">Address</div>
+          <div id="buyerAddress" class="editable is-empty muted" contenteditable data-placeholder="Buyer address"></div>
+
+          <div style="height:10px"></div>
+          <div class="label">Party GST No</div>
+          <div id="buyerGst" class="value editable is-empty" contenteditable data-placeholder="Party GST No"></div>
+
+          <div style="height:10px"></div>
+          <div class="label">State Code</div>
+          <div id="stateCode" class="editable is-empty muted" contenteditable data-placeholder="State Code"></div>
+        </div>
+
+        <div class="info-box">
+          <div class="label">Vehicle No</div>
+          <div id="vehicleNo" class="editable is-empty muted" contenteditable data-placeholder=""></div>
+
+          <div style="height:10px"></div>
+          <div class="label">Phone / Contact</div>
+          <div id="contact" class="editable is-empty muted" contenteditable data-placeholder=""></div>
+
+          <div style="height:10px"></div>
+          <div class="label">GSTIN (Company)</div>
+          <div id="companyGst" class="value editable is-empty" contenteditable data-placeholder=""></div>
+        </div>
+      </div>
+
+      <!-- items card -->
+      <div class="card" style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>Items</strong>
+          <div style="display:flex;gap:8px">
+            <button id="addRowBtn" class="ghost">Add Row</button>
+            <button id="clearRowsBtn" class="ghost">Clear Rows</button>
+          </div>
+        </div>
+
+        <table class="items" id="itemsTable" aria-label="Invoice items">
+          <thead>
+            <tr>
+              <th class="sno">S.NO</th>
+              <th>Item Name</th>
+              <th style="width:110px">HS CODE</th>
+              <th style="width:110px">Qty</th>
+              <th style="width:120px">Rate</th>
+              <th style="width:140px">Total Amount</th>
+              <th style="width:60px">✖</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div class="totals-wrap">
+          <div class="totals" role="group" aria-label="Totals">
+            <div class="row"><div class="muted">Total Qty</div><div id="totalQty">0</div></div>
+            <div class="row"><div class="muted">Amount</div><div id="totalAmount">0.00</div></div>
+            <div class="row" id="cgstRow"><div class="muted">CGST (<span id="cgstPct">9</span>%)</div><div id="cgst">0.00</div></div>
+            <div class="row" id="sgstRow"><div class="muted">SGST (<span id="sgstPct">9</span>%)</div><div id="sgst">0.00</div></div>
+            <div class="row" id="igstRow" style="display:none"><div class="muted">IGST (<span id="igstPct">18</span>%)</div><div id="igst">0.00</div></div>
+            <div style="height:8px"></div>
+            <div class="row" style="font-weight:800"><div>Total</div><div id="grandTotal">0.00</div></div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:12px;align-items:flex-start">
+          <div style="flex:1">
+            <div class="label">Amount in Words</div>
+            <!-- Made non-editable / fixed. data-auto="true" so script will fill it -->
+            <div id="amountWords" class="muted" data-placeholder="Amount in words" data-auto="true"></div>
+          </div>
+
+          <div style="width:100%;max-width:520px">
+            <div class="label">Bank Details</div>
+            <div class="bank-inline" style="padding:12px;border-radius:10px;border:1px solid var(--card-border);background:var(--card-bg)">
+              <span class="label">Bank Name:</span>
+              <div id="bankName" class="field editable is-empty" contenteditable data-placeholder="SBI"></div>
+
+              <span class="label">A/C:</span>
+              <div id="bankAccount" class="field editable is-empty" contenteditable data-placeholder="1234567890"></div>
+
+              <span class="label">IFSC:</span>
+              <div id="bankIfsc" class="field editable is-empty" contenteditable data-placeholder="SBIN0001234"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- footer -->
+      <div class="footer">
+        <div class="terms">
+          <div style="font-weight:700;margin-bottom:6px">Terms & Conditions</div>
+          <div id="termsText" class="editable is-empty muted" contenteditable data-placeholder="1. Our responsibility ceases as soon as the goods leave our premises. 2. Delivery ex premises."></div>
+        </div>
+
+        <div class="signature">
+          <div class="title">Receiver's Signature</div>
+          <div style="height:10px"></div>
+          <div class="for">For <span id="companySign" class="editable is-empty" contenteditable data-placeholder="Your Company"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- libs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    // Helper functions
+    const toNum = v => Number(String(v).replace(/[^0-9.-]/g,'')) || 0;
+    const fix2 = n => Number(Math.round(n*100)/100).toFixed(2);
+
+    // Number to words (Indian style, Rupees)
+    function numberToWords(num){
+      if (isNaN(num)) return '';
+      num = Math.floor(num);
+      if (num === 0) return 'Zero Rupees';
+      const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+      const b=['','', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+      function twoDigit(n){ if (n<20) return a[n]; return b[Math.floor(n/10)] + (n%10? ' ' + a[n%10] : ''); }
+      function threeDigit(n){ if (n<100) return twoDigit(n); const rem=n%100; return a[Math.floor(n/100)] + ' Hundred' + (rem ? ' ' + twoDigit(rem) : ''); }
+      let words='';
+      const crore = Math.floor(num / 10000000);
+      const lakh  = Math.floor((num%10000000) / 100000);
+      const thousand = Math.floor((num%100000) / 1000);
+      const hundred = Math.floor((num%1000));
+      if (crore) words += (threeDigit(crore) + ' Crore ');
+      if (lakh) words += (twoDigit(lakh) + ' Lakh ');
+      if (thousand) words += (twoDigit(thousand) + ' Thousand ');
+      if (hundred) words += (threeDigit(hundred) + ' ');
+      return (words.trim() + ' Rupees').replace(/\s+/g,' ');
+    }
+
+    // Placeholder handling for contenteditable elements
+    function updateEmptyState(el){
+      if (!el) return;
+      const txt = el.textContent || '';
+      if (txt.trim() === '') el.classList.add('is-empty'); else el.classList.remove('is-empty');
+    }
+    function initPlaceholders(){
+      const eds = Array.from(document.querySelectorAll('.editable, .field'));
+      eds.forEach(el=>{
+        updateEmptyState(el);
+        el.addEventListener('focus', ()=>{
+          el.classList.remove('is-empty');
+          const ph = el.getAttribute('data-placeholder') || '';
+          if (el.textContent.trim() === ph.trim()) el.textContent = '';
+          placeCaretAtEnd(el);
+        });
+        el.addEventListener('blur', ()=> updateEmptyState(el));
+        el.addEventListener('input', ()=> {
+          updateEmptyState(el);
+          updateTotals();
+        });
+      });
+    }
+    function placeCaretAtEnd(el){
+      try{
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }catch(e){}
+    }
+
+    // Items table logic with animation
+    const tbody = document.querySelector('#itemsTable tbody');
+
+    function addRow(data = {}, focus = true){
+      const idx = tbody.children.length + 1;
+      const tr = document.createElement('tr');
+      tr.classList.add('new-row');
+      tr.innerHTML = `
+        <td class="sno">${idx}</td>
+        <td><input type="text" class="itemName" placeholder="Item name" value="${escapeHtml(data.name||'')}" /></td>
+        <td><input type="text" class="hs" placeholder="4403" value="${escapeHtml(data.hs||'')}" /></td>
+        <td><input type="number" step="0.001" class="qty" placeholder="0" value="${escapeHtml(data.qty||'')}" /></td>
+        <td><input type="number" step="0.01" class="rate" placeholder="0.00" value="${escapeHtml(data.rate||'')}" /></td>
+        <td class="rowTotal">0.00</td>
+        <td class="center"><button class="del-row-btn" title="Delete row">✖</button></td>
+      `;
+      tbody.appendChild(tr);
+
+      // remove new-row class after animation
+      setTimeout(()=> tr.classList.remove('new-row'), 400);
+
+      tr.querySelectorAll('.qty, .rate').forEach(el=>{
+        el.addEventListener('input', updateTotals);
+        if (el.classList.contains('rate')) {
+          el.addEventListener('keydown', (e)=>{
+            if (e.key === 'Enter') { e.preventDefault(); addRow({}, true); }
+          });
+        }
+      });
+
+      tr.querySelector('.del-row-btn').addEventListener('click', ()=>{
+        tr.classList.add('removing');
+        // wait for animation then remove
+        tr.addEventListener('animationend', ()=>{ tr.remove(); renumber(); updateTotals(); }, { once:true });
+      });
+
+      if (focus) {
+        const firstInput = tr.querySelector('.itemName');
+        if (firstInput) firstInput.focus();
+      }
+
+      updateTotals();
+    }
+
+    function renumber(){
+      Array.from(tbody.children).forEach((tr,i)=> tr.querySelector('.sno').textContent = i+1);
+    }
+    function clearRows(){ tbody.innerHTML = ''; updateTotals(); }
+
+    // GST handling
+    let taxMode = 'cgst'; // 'cgst' or 'igst'
+    let taxPercent = 18;
+
+    function applyTaxSettings(){
+      taxPercent = parseFloat(document.getElementById('taxPercent').value) || 0;
+      const mode = document.querySelector('input[name="taxMode"]:checked').value;
+      taxMode = mode;
+      if (mode === 'cgst') {
+        // split equally
+        const half = taxPercent / 2;
+        document.getElementById('cgstPct').textContent = fix2(half).replace('.00','');
+        document.getElementById('sgstPct').textContent = fix2(half).replace('.00','');
+        document.getElementById('cgstRow').style.display = '';
+        document.getElementById('sgstRow').style.display = '';
+        document.getElementById('igstRow').style.display = 'none';
+      } else {
+        document.getElementById('igstPct').textContent = fix2(taxPercent).replace('.00','');
+        document.getElementById('cgstRow').style.display = 'none';
+        document.getElementById('sgstRow').style.display = 'none';
+        document.getElementById('igstRow').style.display = '';
+      }
+      updateTotals();
+    }
+
+    function updateTotals(){
+      let totalQty = 0, amount = 0;
+      Array.from(tbody.children).forEach(tr=>{
+        const qEl = tr.querySelector('.qty');
+        const rEl = tr.querySelector('.rate');
+        const qty = toNum(qEl?.value ?? 0);
+        const rate = toNum(rEl?.value ?? 0);
+        const rowTotal = qty * rate;
+        tr.querySelector('.rowTotal').textContent = fix2(rowTotal);
+        totalQty += qty;
+        amount += rowTotal;
+      });
+
+      document.getElementById('totalQty').textContent = totalQty ? totalQty.toFixed(3) : '0';
+      document.getElementById('totalAmount').textContent = fix2(amount);
+
+      if (taxMode === 'cgst') {
+        const half = taxPercent / 2;
+        const cgst = amount * (half/100);
+        const sgst = amount * (half/100);
+        document.getElementById('cgst').textContent = fix2(cgst);
+        document.getElementById('sgst').textContent = fix2(sgst);
+        document.getElementById('igst').textContent = '0.00';
+        const grand = amount + cgst + sgst;
+        document.getElementById('grandTotal').textContent = fix2(grand);
+      } else {
+        const igst = amount * (taxPercent/100);
+        document.getElementById('igst').textContent = fix2(igst);
+        document.getElementById('cgst').textContent = '0.00';
+        document.getElementById('sgst').textContent = '0.00';
+        const grand = amount + igst;
+        document.getElementById('grandTotal').textContent = fix2(grand);
+      }
+
+      // amount in words auto
+      const aw = document.getElementById('amountWords');
+      const grand = parseFloat(document.getElementById('grandTotal').textContent || 0) || 0;
+      if (aw.classList.contains('is-empty') || aw.getAttribute('data-auto') === 'true') {
+        aw.textContent = numberToWords(Math.floor(grand));
+        aw.setAttribute('data-auto','true');
+        updateEmptyState(aw);
+      }
+    }
+
+    // HTML escape for input values
+    function escapeHtml(s){ if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // logo + color
+    document.getElementById('logoInput').addEventListener('change', (e)=>{
+      const f = e.target.files[0]; if (!f) return;
+      const url = URL.createObjectURL(f); const img = document.createElement('img'); img.onload = ()=> URL.revokeObjectURL(url); img.src = url;
+      const box = document.getElementById('logoBox'); box.innerHTML = ''; box.appendChild(img);
+    });
+    document.getElementById('colorPicker').addEventListener('input', (e)=> document.documentElement.style.setProperty('--blue', e.target.value));
+
+    // buttons
+    document.getElementById('addRowBtn').addEventListener('click', ()=> addRow({}));
+    document.getElementById('clearRowsBtn').addEventListener('click', ()=> { if (confirm('Clear all rows?')) clearRows(); });
+    document.getElementById('resetBtn').addEventListener('click', ()=> { if (confirm('Reset all fields to default?')) location.reload(); });
+
+    // tax apply
+    document.getElementById('applyTax').addEventListener('click', applyTaxSettings);
+    document.getElementById('taxPercent').addEventListener('keydown', (e)=> { if (e.key === 'Enter') applyTaxSettings(); });
+
+    // initial rows & placeholders
+    addRow({}); addRow({});
+    initPlaceholders();
+    applyTaxSettings();
+
+    // Client-side PDF generation
+    document.getElementById('downloadPdfBtn').addEventListener('click', async ()=>{
+      const btn = document.getElementById('downloadPdfBtn');
+      btn.disabled = true; btn.textContent = 'Rendering...';
+
+      // Hide placeholders (make empty contenteditable truly empty) so PDF doesn't show faded placeholders
+      Array.from(document.querySelectorAll('.editable')).forEach(el=>{ if (el.classList.contains('is-empty')) el.textContent = ''; });
+
+      try {
+        const invoiceEl = document.getElementById('invoiceRoot');
+        const canvas = await html2canvas(invoiceEl, {scale:2, useCORS:true, backgroundColor:'#ffffff'});
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({unit:'px', format:[canvas.width, canvas.height]});
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        let filename = (document.getElementById('invoiceNo').textContent || 'invoice').trim(); if (!filename) filename='invoice';
+        pdf.save(filename.replace(/\s+/g,'_') + '.pdf');
+      } catch (err) {
+        console.error(err);
+        alert('PDF generation failed: ' + (err.message || err));
+      } finally {
+        btn.disabled = false; btn.textContent = 'Download PDF';
+      }
+    });
+
+    // update totals periodically to keep sync when editing contenteditable fields
+    setInterval(updateTotals, 800);
+
+    // small accessibility: pressing Enter in a focused contenteditable shouldn't submit; handled by browser.
+  </script>
+</body>
+</html>
