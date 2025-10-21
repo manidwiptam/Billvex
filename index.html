@@ -177,7 +177,7 @@
         <div class="header-right">
           <div class="tax-badge" id="taxBadge">TAX INVOICE</div>
           <div class="meta-list">
-            <div><span class="label">Invoice No</span><div id="invoiceNo" class="value editable is-empty" contenteditable data-placeholder="Invoice No (e.g. CCL-2)"></div></div>
+            <div><span class="label">Invoice No</span><div id="invoiceNo" class="value editable is-empty" contenteditable data-placeholder="Invoice No (e.g. INV-1)"></div></div>
             <div style="margin-top:8px"><span class="label">Date</span><div id="invoiceDate" class="value editable is-empty" contenteditable data-placeholder="DD-MM-YYYY"></div></div>
             <div style="margin-top:8px"><span class="label">Sale Type</span><div id="saleType" class="value editable is-empty" contenteditable data-placeholder="INTERSTATE SALE"></div></div>
           </div>
@@ -579,9 +579,11 @@
 
     // --------------------------
     // Invoice counter logic (INV-1, INV-2, ...) with localStorage
-    // Behavior: do NOT increment on page load.
-    // On load we display the next available number (storedCounter + 1).
-    // When PDF is successfully saved, we commit the increment by storing the new counter.
+    // Behavior:
+    //  - On first load, show nextAvailableNumber (storedCounter + 1) if invoiceNo is empty.
+    //  - If user edits invoiceNo manually and enters a valid INV-n (or n), we WILL persist that as the new starting point
+    //    so future page loads will show next numbers from that (user requested "manual start from a specific number").
+    //  - When PDF is successfully saved, we commit the number shown (INV-n) to storage (so next becomes INV-(n+1)).
     // --------------------------
     const STORAGE_KEY = 'invoice_counter_v1';
 
@@ -595,7 +597,7 @@
         return 0;
       }
     }
-    function commitCounter(newValue){
+    function writeCounter(newValue){
       try {
         localStorage.setItem(STORAGE_KEY, String(newValue));
         return true;
@@ -604,9 +606,7 @@
       }
     }
     function nextAvailableNumber(){
-      // next available is current stored + 1
-      const current = readCounter();
-      return current + 1;
+      return readCounter() + 1;
     }
 
     function getTodayDDMMYYYY(){
@@ -615,6 +615,16 @@
       const MM = String(d.getMonth()+1).padStart(2,'0');
       const YYYY = d.getFullYear();
       return `${DD}-${MM}-${YYYY}`;
+    }
+
+    function parseInvoiceNumber(str){
+      if (!str) return null;
+      // Accept formats like "INV-12", "INV 12", "inv12", "12"
+      const s = String(str).trim();
+      // try to find trailing number
+      const m = s.match(/(\d+)\s*$/);
+      if (m) return parseInt(m[1], 10);
+      return null;
     }
 
     function ensureInvoiceMeta(){
@@ -627,13 +637,28 @@
         dateEl.classList.remove('is-empty');
       }
 
-      // Show next available INV number but DO NOT commit it yet
+      // Show next available INV number but DO NOT override manual edits
       if (!invNoEl.textContent || invNoEl.textContent.trim() === '') {
         const n = nextAvailableNumber();
         invNoEl.textContent = `INV-${n}`;
         invNoEl.classList.remove('is-empty');
       }
     }
+
+    // If user edits invoiceNo manually, persist that as new base (so default starts from it)
+    const invoiceNoEl = document.getElementById('invoiceNo');
+    invoiceNoEl.addEventListener('blur', ()=>{
+      updateEmptyState(invoiceNoEl);
+      const text = (invoiceNoEl.textContent || '').trim();
+      const parsed = parseInvoiceNumber(text);
+      if (parsed !== null && parsed > 0) {
+        // User entered a number - persist it as the current stored counter (so nextAvailable = parsed)
+        // We store parsed - 1 so nextAvailableNumber() returns parsed.
+        writeCounter(parsed - 1);
+        // Normalize display to INV-<parsed>
+        invoiceNoEl.textContent = `INV-${parsed}`;
+      }
+    });
 
     // run initial meta setup on load
     window.addEventListener('load', ()=>{
@@ -711,14 +736,14 @@
         // Then we increment the in-page displayed invoice to the next available (n+1) for the next invoice.
         try {
           // extract numeric part of displayed invoice
-          const match = invStr.match(/INV[-_]?(\d+)$/i);
+          const match = invStr.match(/(\d+)\s*$/);
           let shownNum = match ? parseInt(match[1],10) : null;
           if (shownNum === null) {
             // fallback to nextAvailableNumber
             shownNum = nextAvailableNumber();
           }
           // commit shownNum as current stored counter
-          commitCounter(shownNum);
+          writeCounter(shownNum);
           // now update UI to next available invoice (shownNum+1)
           const next = shownNum + 1;
           invNoEl.textContent = `INV-${next}`;
