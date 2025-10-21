@@ -178,7 +178,7 @@
           <div class="tax-badge" id="taxBadge">TAX INVOICE</div>
           <div class="meta-list">
             <div><span class="label">Invoice No</span><div id="invoiceNo" class="value editable is-empty" contenteditable data-placeholder="Invoice No (e.g. CCL-2)"></div></div>
-            <div style="margin-top:8px"><span class="label">Date</span><div id="invoiceDate" class="value editable is-empty" contenteditable data-placeholder="YYYY-MM-DD"></div></div>
+            <div style="margin-top:8px"><span class="label">Date</span><div id="invoiceDate" class="value editable is-empty" contenteditable data-placeholder="DD-MM-YYYY"></div></div>
             <div style="margin-top:8px"><span class="label">Sale Type</span><div id="saleType" class="value editable is-empty" contenteditable data-placeholder="INTERSTATE SALE"></div></div>
           </div>
         </div>
@@ -268,6 +268,7 @@
               <select id="paymentType" aria-label="Payment Type">
                 <option value="Cash" selected>Cash</option>
                 <option value="Online">Online</option>
+                <option value="Check">Check</option>
               </select>
             </div>
 
@@ -491,7 +492,6 @@
     function escapeHtml(s){ if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
     // logo + color
-    // --- NEW: FileReader => dataURL approach to guarantee image embedded for html2canvas ---
     document.getElementById('logoInput').addEventListener('change', (e) => {
       const f = e.target.files && e.target.files[0];
       if (!f) return;
@@ -577,13 +577,86 @@
       return Promise.all(promises);
     }
 
-    // Client-side PDF generation (now waits for images)
+    // --------------------------
+    // Invoice counter logic (INV-1, INV-2, ...) with localStorage
+    // Behavior: do NOT increment on page load.
+    // On load we display the next available number (storedCounter + 1).
+    // When PDF is successfully saved, we commit the increment by storing the new counter.
+    // --------------------------
+    const STORAGE_KEY = 'invoice_counter_v1';
+
+    function readCounter(){
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        let n = raw ? parseInt(raw, 10) : 0;
+        if (isNaN(n)) n = 0;
+        return n;
+      } catch (e) {
+        return 0;
+      }
+    }
+    function commitCounter(newValue){
+      try {
+        localStorage.setItem(STORAGE_KEY, String(newValue));
+        return true;
+      } catch(e) {
+        return false;
+      }
+    }
+    function nextAvailableNumber(){
+      // next available is current stored + 1
+      const current = readCounter();
+      return current + 1;
+    }
+
+    function getTodayDDMMYYYY(){
+      const d = new Date();
+      const DD = String(d.getDate()).padStart(2,'0');
+      const MM = String(d.getMonth()+1).padStart(2,'0');
+      const YYYY = d.getFullYear();
+      return `${DD}-${MM}-${YYYY}`;
+    }
+
+    function ensureInvoiceMeta(){
+      const dateEl = document.getElementById('invoiceDate');
+      const invNoEl = document.getElementById('invoiceNo');
+
+      // Auto-set date to DD-MM-YYYY if empty
+      if (!dateEl.textContent || dateEl.textContent.trim() === '') {
+        dateEl.textContent = getTodayDDMMYYYY();
+        dateEl.classList.remove('is-empty');
+      }
+
+      // Show next available INV number but DO NOT commit it yet
+      if (!invNoEl.textContent || invNoEl.textContent.trim() === '') {
+        const n = nextAvailableNumber();
+        invNoEl.textContent = `INV-${n}`;
+        invNoEl.classList.remove('is-empty');
+      }
+    }
+
+    // run initial meta setup on load
+    window.addEventListener('load', ()=>{
+      ensureInvoiceMeta();
+      initPlaceholders();
+    });
+
+    // --------------------------
+    // Client-side PDF generation (waits for images) and commit invoice counter on success
+    // --------------------------
     document.getElementById('downloadPdfBtn').addEventListener('click', async ()=>{
       const btn = document.getElementById('downloadPdfBtn');
       btn.disabled = true; btn.textContent = 'Rendering...';
 
       // Hide placeholders (make empty contenteditable truly empty) so PDF doesn't show faded placeholders
-      Array.from(document.querySelectorAll('.editable')).forEach(el=>{ if (el.classList.contains('is-empty')) el.textContent = ''; });
+      const editableEls = Array.from(document.querySelectorAll('.editable'));
+      const emptied = [];
+      editableEls.forEach(el=>{
+        if (el.classList.contains('is-empty')) {
+          emptied.push({ el, text: el.textContent });
+          el.textContent = '';
+        }
+      });
 
       try {
         const invoiceEl = document.getElementById('invoiceRoot');
@@ -591,25 +664,80 @@
         // WAIT for images (including uploaded logo) to load before capturing
         await waitForImages(invoiceEl);
 
-        const canvas = await html2canvas(invoiceEl, {scale:2, useCORS:true, backgroundColor:'#ffffff'});
+        // increase scale for good quality
+        const canvas = await html2canvas(invoiceEl, {scale:2, useCORS:true, backgroundColor:'#ffffff', scrollY: -window.scrollY});
         const imgData = canvas.toDataURL('image/png');
+
+        // Use jsPDF in mm and fit to A4 size keeping aspect ratio
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({unit:'px', format:[canvas.width, canvas.height]});
-        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-        let filename = (document.getElementById('invoiceNo').textContent || 'invoice').trim(); if (!filename) filename='invoice';
-        pdf.save(filename.replace(/\s+/g,'_') + '.pdf');
+        const pdf = new jsPDF({unit:'mm', format:'a4', orientation:'portrait'});
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        // convert canvas px to mm using 96 DPI assumption: mm = px * 25.4 / dpi
+        const dpi = 96;
+        const imgWidthMM = canvas.width * 25.4 / dpi;
+        const imgHeightMM = canvas.height * 25.4 / dpi;
+
+        // scale to fit A4 with minimal margins
+        const margin = 8; // mm
+        let drawWidth = pageWidth - margin*2;
+        let drawHeight = (imgHeightMM * drawWidth) / imgWidthMM;
+
+        if (drawHeight > (pageHeight - margin*2)) {
+          drawHeight = pageHeight - margin*2;
+          drawWidth = (imgWidthMM * drawHeight) / imgHeightMM;
+        }
+
+        const x = (pageWidth - drawWidth) / 2;
+        const y = (pageHeight - drawHeight) / 2;
+
+        pdf.addImage(imgData, 'PNG', x, y, drawWidth, drawHeight, undefined, 'FAST');
+
+        // Filename: DD-MM-YYYY_INV-x (read from displayed fields)
+        const dateEl = document.getElementById('invoiceDate');
+        const invNoEl = document.getElementById('invoiceNo');
+        const dateStr = (dateEl.textContent || '').trim() || getTodayDDMMYYYY();
+        const invStr = (invNoEl.textContent || '').trim() || `INV-${nextAvailableNumber()}`;
+        const safeInv = invStr.replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
+        const safeDate = dateStr.replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
+        const filename = `${safeDate}_${safeInv}.pdf`;
+
+        // Save PDF (this will prompt the user)
+        pdf.save(filename);
+
+        // After successful generation/save, commit the invoice counter:
+        // We commit the number that was displayed (INV-n) so stored counter becomes n.
+        // Then we increment the in-page displayed invoice to the next available (n+1) for the next invoice.
+        try {
+          // extract numeric part of displayed invoice
+          const match = invStr.match(/INV[-_]?(\d+)$/i);
+          let shownNum = match ? parseInt(match[1],10) : null;
+          if (shownNum === null) {
+            // fallback to nextAvailableNumber
+            shownNum = nextAvailableNumber();
+          }
+          // commit shownNum as current stored counter
+          commitCounter(shownNum);
+          // now update UI to next available invoice (shownNum+1)
+          const next = shownNum + 1;
+          invNoEl.textContent = `INV-${next}`;
+        } catch (e) {
+          console.warn('Failed to commit invoice counter:', e);
+        }
+
       } catch (err) {
         console.error(err);
         alert('PDF generation failed: ' + (err.message || err));
       } finally {
+        // restore emptied placeholders so UI stays same after export
+        emptied.forEach(item => item.el.textContent = item.text);
         btn.disabled = false; btn.textContent = 'Download PDF';
       }
     });
 
     // update totals periodically to keep sync when editing contenteditable fields
     setInterval(updateTotals, 800);
-
-    // small accessibility: pressing Enter in a focused contenteditable shouldn't submit; handled by browser.
   </script>
 </body>
 </html>
