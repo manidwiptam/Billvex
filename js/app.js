@@ -358,11 +358,16 @@
       const menu = wrapper.querySelector('.custom-select-menu');
       const options = wrapper.querySelectorAll('.custom-select-option');
       const hiddenSelect = wrapper.querySelector('select');
+      const parentCard = wrapper.closest('.editor-card');
 
       function closeMenu() {
         trigger.classList.remove('is-open');
         trigger.setAttribute('aria-expanded', 'false');
         menu.classList.remove('is-open');
+        wrapper.classList.remove('is-open');
+        if (parentCard) {
+          parentCard.classList.remove('has-open-dropdown');
+        }
       }
 
       function openMenu() {
@@ -372,10 +377,16 @@
           t.setAttribute('aria-expanded', 'false');
         });
         document.querySelectorAll('.custom-select-menu.is-open').forEach(m => m.classList.remove('is-open'));
+        document.querySelectorAll('.custom-select-wrapper.is-open').forEach(w => w.classList.remove('is-open'));
+        document.querySelectorAll('.editor-card.has-open-dropdown').forEach(c => c.classList.remove('has-open-dropdown'));
 
         trigger.classList.add('is-open');
         trigger.setAttribute('aria-expanded', 'true');
         menu.classList.add('is-open');
+        wrapper.classList.add('is-open');
+        if (parentCard) {
+          parentCard.classList.add('has-open-dropdown');
+        }
       }
 
       trigger.addEventListener('click', (e) => {
@@ -456,6 +467,8 @@
           t.setAttribute('aria-expanded', 'false');
         });
         document.querySelectorAll('.custom-select-menu.is-open').forEach(m => m.classList.remove('is-open'));
+        document.querySelectorAll('.custom-select-wrapper.is-open').forEach(w => w.classList.remove('is-open'));
+        document.querySelectorAll('.editor-card.has-open-dropdown').forEach(c => c.classList.remove('has-open-dropdown'));
       }
     });
 
