@@ -30,26 +30,18 @@ A modern, fast, responsive billing and invoice generator designed as a clean, lo
 
 ---
 
-## Screenshots / Demo
+## Screenshots & Demo
 
-*Live Demo / Screenshot preview placeholder:*
+### Live Dual-Pane SaaS Workspace
+![Billvex Web Application Workspace](assets/billvex-app-preview.png)
 
-```
-+-------------------------------------------------------------------------------+
-|  Billvex (SaaS Utility)             [Theme]  [Demo Data] [Print] [Download]   |
-+------------------------------------+------------------------------------------+
-|  FORM EDITOR                       |  LIVE A4 DOCUMENT PREVIEW                |
-|  - Company Info & Logo             |  +------------------------------------+  |
-|  - Invoice No & Date               |  | [LOGO] COMPANY NAME      TAX INV  |  |
-|  - Buyer / Party Details           |  | Billed To: Buyer Name    INV-01   |  |
-|  - Items (Qty x Rate)              |  | Item           Qty   Rate  Total  |  |
-|  - Tax Mode (CGST/SGST vs IGST)    |  | --------------------------------- |  |
-|  - Payment & Bank Details          |  | Subtotal:                ₹1,000   |  |
-|  - Terms & Conditions              |  | IGST (18%):                ₹180   |  |
-|                                    |  | Grand Total:             ₹1,180   |  |
-|                                    |  +------------------------------------+  |
-+------------------------------------+------------------------------------------+
-```
+### Exported A4 Tax Invoice (PDF & Print)
+<p align="center">
+  <img src="assets/billvex-invoice-preview.png" alt="Sample Generated A4 Tax Invoice" width="700" style="border-radius:12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);" />
+</p>
+
+> [!TIP]
+> View and download the authentic exported document directly from the repository: [`sample-invoice.pdf`](assets/sample-invoice.pdf).
 
 ---
 
