@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <defs>
+    <linearGradient id="hydrangeaGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="50%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#a855f7" />
+    </linearGradient>
+    <linearGradient id="shineGrad" x1="0" y1="0" x2="0" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <!-- Squircle Base with Hydrangea Gradient -->
+  <rect width="64" height="64" rx="16" fill="url(#hydrangeaGrad)" />
+  <!-- Glass Top Reflection -->
+  <rect width="64" height="32" rx="16" fill="url(#shineGrad)" />
+  <!-- Stylized B Glyph with Document Notches -->
+  <path d="M20 17H35C40.523 17 45 21.477 45 27C45 30.73 42.956 33.98 39.92 35.68C42.42 37.38 44 40.24 44 43.5C44 49.023 39.523 53.5 34 53.5H20C18.62 53.5 17.5 52.38 17.5 51V19.5C17.5 18.12 18.62 17 20 17Z" fill="white" fill-opacity="0.18" />
+  <path d="M22 20H33.5C36.814 20 39.5 22.686 39.5 26C39.5 29.314 36.814 32 33.5 32H22V20Z" fill="white" />
+  <path d="M22 33.5H35C38.314 33.5 41 36.186 41 39.5C41 42.814 38.314 45.5 35 45.5H22V33.5Z" fill="white" />
+  <!-- Receipt / Bill Lines Cutout -->
+  <path d="M26 26H34M26 39.5H35" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" />
+</svg>

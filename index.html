@@ -1,768 +1,713 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Billing Format</title>
-  <style>
-    :root{
-      --blue:#1f6feb;
-      --muted:#9aa4b2;
-      --card-bg:#fff;
-      --card-border:#e6eefc;
-      --accent: #2563eb;
-      --ease: cubic-bezier(.2,.9,.2,1);
-    }
-    *{box-sizing:border-box}
-    body{font-family: Inter, Arial, Helvetica, sans-serif; background:#f3f6fb; margin:0; padding:18px; color:#111}
-    .wrap{max-width:1100px;margin:0 auto}
-    .controls{display:flex;gap:12px;align-items:center;margin-bottom:14px}
-    .controls .spacer{flex:1}
-    .toolbar{display:flex;gap:8px}
-    button{padding:8px 12px;border:none;border-radius:8px;background:var(--blue);color:white;cursor:pointer;font-weight:600;transition:transform .18s var(--ease), box-shadow .18s var(--ease)}
-    button:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(31,111,235,0.12)}
-    button.ghost{background:transparent;color:var(--blue);border:1px solid rgba(31,111,235,0.12)}
-    .card{background:var(--card-bg);border-radius:12px;padding:14px;margin-bottom:14px;box-shadow:0 6px 18px rgba(20,40,80,0.04);border:1px solid var(--card-border);transition:transform .2s var(--ease), box-shadow .2s var(--ease)}
-    .card:hover{transform:translateY(-3px)}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Billvex - Fast, responsive, professional invoice and billing document generator. Local-first, private, and customizable." />
+  <meta property="og:title" content="Billvex - Modern Invoice & Bill Generator" />
+  <meta property="og:description" content="Create, customize, and export professional PDF invoices with real-time preview and tax calculation." />
+  <meta property="og:type" content="website" />
+  
+  <title>Billvex - Modern Invoice &amp; Bill Generator</title>
+  
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  
+  <!-- Google Fonts: Fugaz One (Headers) & Work Sans (Body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fugaz+One&family=Work+Sans:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
 
-    /* header */
-    .invoice-header{display:flex;gap:18px;align-items:stretch}
-    .logo-box{width:110px;height:110px;border:2px dashed #d8e3f7;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff;flex:0 0 110px;transition:box-shadow .18s var(--ease)}
-    .logo-box img{max-width:100%;max-height:100%;display:block}
-    .company-block{flex:1;display:flex;flex-direction:column;justify-content:center;padding:6px}
-    .company-block h1{margin:0;font-size:22px;color:#6b7280;font-weight:700;letter-spacing:1px;transition:color .15s var(--ease)}
-    .company-block p{margin:6px 0 0 0;color:#6b7280;font-size:13px}
-    .header-right{width:320px;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-end;gap:8px}
-    .tax-badge{background:var(--blue);color:white;padding:12px 14px;border-radius:8px;font-weight:800;display:inline-block;transform-origin:center;animation:badgePulse 2.8s infinite ease-in-out}
-    @keyframes badgePulse{0%{transform:translateY(0)}50%{transform:translateY(-3px)}100%{transform:translateY(0)}}
-    .meta-list{width:100%;text-align:right}
-    .meta-list .label{display:block;color:#9aa4b2;font-size:12px}
-    .meta-list .value{font-size:18px;color:#4b5563;font-weight:600;margin-top:6px}
-
-    /* settings row (GST customization) */
-    .settings{display:flex;gap:12px;align-items:center;background:#fff;padding:10px;border-radius:10px;border:1px solid var(--card-border);margin-bottom:12px}
-    .settings label{font-size:13px;color:#374151}
-    .settings input[type="number"]{width:80px;padding:6px;border-radius:6px;border:1px solid #e6eefc;background:rgba(243,248,255,0.6)}
-    .settings .mode{display:flex;gap:8px;align-items:center;margin-left:8px}
-
-    /* boxes */
-    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-    .info-box{padding:14px;border-radius:10px;background:var(--card-bg);border:1px solid var(--card-border);min-height:150px;transition:box-shadow .18s var(--ease)}
-    .info-box .label{color:#374151;font-size:13px;margin-bottom:8px}
-    .info-box .value{font-size:18px;color:#6b7280;font-weight:700}
-
-    /* items */
-    table{width:100%;border-collapse:collapse;margin-top:8px}
-    table th, table td{border:1px solid #e6eefc;padding:8px;font-size:13px;vertical-align:middle}
-    table th{background:#f8fbff;font-weight:700}
-    .items input[type="text"], .items input[type="number"]{
-      width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(37,99,235,0.06);background:rgba(243,248,255,0.6);font-size:14px;box-sizing:border-box;transition:box-shadow .12s var(--ease), transform .12s var(--ease);
-    }
-    .items input[type="text"]:focus, .items input[type="number"]:focus{box-shadow:0 6px 18px rgba(37,99,235,0.06);transform:translateY(-2px)}
-    .items input[type="number"]{text-align:right}
-    .rowTotal{ text-align:right; font-weight:600; padding-right:10px }
-    .del-row-btn{background:#eef6ff;border:1px solid #dbeafe;border-radius:8px;padding:8px 10px;cursor:pointer;transition:transform .12s var(--ease)}
-    .del-row-btn:hover{transform:scale(1.06)}
-    .sno{width:44px;text-align:center}
-
-    /* new row animation */
-    tr.new-row{animation:fadeInUp .28s var(--ease) both}
-    @keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-    tr.removing{animation:fadeOut .22s var(--ease) forwards}
-    @keyframes fadeOut{from{opacity:1;height:auto}to{opacity:0;height:0;padding:0;margin:0}}
-
-    .totals-wrap{display:flex;justify-content:flex-end;margin-top:12px}
-    .totals{min-width:260px;border-radius:10px;border:1px solid var(--card-border);background:#fbfdff;padding:12px;transition:box-shadow .15s var(--ease)}
-    .totals .row{display:flex;justify-content:space-between;padding:6px 0}
-
-    .bank-inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .bank-inline .label{font-weight:600;color:#374151;margin-right:6px}
-    .bank-inline .field{min-width:80px;border-bottom:2px solid #e9f2ff;padding:6px 8px;border-radius:6px;background:rgba(243,248,255,0.6);transition:box-shadow .12s var(--ease)}
-    .bank-inline .field:focus{box-shadow:0 6px 18px rgba(37,99,235,0.06)}
-
-    /* placeholders for contenteditable */
-    .editable{min-height:18px;padding:6px;border-radius:6px;background:rgba(243,248,255,0.6);border:1px solid rgba(37,99,235,0.06);transition:box-shadow .12s var(--ease), transform .12s var(--ease)}
-    .editable.is-empty:before{content:attr(data-placeholder);color:var(--muted);pointer-events:none}
-    .editable:focus{outline:2px dashed rgba(37,99,235,0.16);background:#fff;box-shadow:0 6px 18px rgba(37,99,235,0.06);transform:translateY(-2px)}
-
-    /* Make the email & phone slightly larger while typing (only when focused) */
-    #companyEmail:focus, #companyPhone:focus {
-      padding:10px 12px;
-      font-size:15px;
-      min-width:170px;
-      display:inline-block;
-      border-radius:6px;
-      background:#fff;
-      box-shadow:0 8px 20px rgba(37,99,235,0.06);
-      transform:translateY(-2px);
-      transition: all .12s var(--ease);
-    }
-
-    /* Make amount-in-words fixed (non-editable) look consistent */
-    #amountWords {
-      min-height:36px;
-      padding:8px 10px;
-      border-radius:6px;
-      background:rgba(243,248,255,0.6);
-      border:1px solid rgba(37,99,235,0.06);
-      font-size:14px;
-      line-height:1.4;
-    }
-
-    .footer{display:flex;gap:12px;margin-top:12px;align-items:flex-end}
-    .terms{flex:1;padding:12px;border-radius:10px;border:1px solid var(--card-border);background:var(--card-bg)}
-    .signature{width:260px;height:120px;border-radius:10px;border:1px solid var(--card-border);display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card-bg)}
-    .signature .title{font-weight:700;margin-bottom:6px}
-    .signature .for{margin-top:8px;color:#4b5563}
-
-    @media (max-width:880px){
-      .invoice-header{flex-direction:column;align-items:stretch}
-      .header-right{width:100%;align-items:flex-start}
-      .two-col{grid-template-columns:1fr}
-      .signature{width:180px}
-    }
-
-    .muted{color:var(--muted)}
-    .center{display:flex;align-items:center;justify-content:center}
-    .small{font-size:12px;color:#666}
-    /* small payment type styling */
-    .payment-row{display:flex;gap:10px;align-items:center;margin-bottom:8px}
-    .payment-row label{font-weight:600;color:#374151}
-    .payment-row select{padding:6px 8px;border-radius:6px;border:1px solid #e6eefc;background:rgba(243,248,255,0.6)}
-  </style>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/print.css" />
 </head>
 <body>
-  <div class="wrap">
-    <!-- top controls -->
-    <div class="controls">
-      <label>Logo: <input id="logoInput" type="file" accept="image/*"></label>
-      <label>Header color: <input id="colorPicker" type="color" value="#1f6feb"></label>
+  <!-- Ambient Backdrop Glows (iOS / Glassmorphism Aesthetic) -->
+  <div class="ambient-glow glow-1" aria-hidden="true"></div>
+  <div class="ambient-glow glow-2" aria-hidden="true"></div>
+  <div class="ambient-glow glow-3" aria-hidden="true"></div>
 
-      <div class="spacer"></div>
+  <!-- App Header -->
+  <header class="app-header" role="banner">
+    <div class="header-container">
+      <div class="brand-group">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none">
+            <defs>
+              <linearGradient id="headerIconGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="var(--primary)" />
+                <stop offset="100%" stop-color="#a855f7" />
+              </linearGradient>
+            </defs>
+            <rect width="64" height="64" rx="16" fill="url(#headerIconGrad)" />
+            <path d="M22 20H33.5C36.814 20 39.5 22.686 39.5 26C39.5 29.314 36.814 32 33.5 32H22V20Z" fill="white" />
+            <path d="M22 33.5H35C38.314 33.5 41 36.186 41 39.5C41 42.814 38.314 45.5 35 45.5H22V33.5Z" fill="white" />
+            <path d="M26 26H34M26 39.5H35" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div>
+          <span class="brand-name">Billvex</span>
+          <span class="brand-badge">SaaS Utility</span>
+        </div>
+      </div>
 
-      <div style="display:flex;gap:10px;align-items:center">
-        <div class="settings">
-          <label style="font-weight:700;margin-right:6px">Tax mode</label>
-          <div class="mode">
-            <label><input type="radio" name="taxMode" value="cgst" checked> CGST + SGST</label>
-            <label style="margin-left:6px"><input type="radio" name="taxMode" value="igst"> IGST</label>
+      <!-- Responsive View Toggle (Tablet/Mobile) -->
+      <div class="view-toggle" role="tablist" aria-label="View switch">
+        <button type="button" class="view-tab active" id="tabEditor" role="tab" aria-selected="true" aria-controls="editorPane">
+          Editor
+        </button>
+        <button type="button" class="view-tab" id="tabPreview" role="tab" aria-selected="false" aria-controls="previewPane">
+          Preview <span id="mobilePreviewTotalBadge" style="font-weight:700;margin-left:4px;"></span>
+        </button>
+      </div>
+
+      <!-- Action Toolbar -->
+      <div class="header-actions">
+        <!-- Dual Theme Selector: Hydrangea vs Custom/Logo (Custom Glassmorphism Dropdown) -->
+        <div class="theme-selector-group" role="group" aria-label="Invoice Theme">
+          <div class="custom-select-wrapper" id="themeDropdown">
+            <button type="button" class="custom-select-trigger" id="themeDropdownTrigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Select Theme">
+              <span class="select-current-content">
+                <span class="select-option-icon">🌸</span>
+                <span class="select-current-text">Hydrangea (Default)</span>
+              </span>
+              <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+
+            <!-- Floating Glassmorphic Dropdown Menu -->
+            <div class="custom-select-menu" id="themeDropdownMenu" role="listbox" aria-label="Theme options">
+              <div class="custom-select-option is-selected" data-value="hydrangea" role="option" aria-selected="true" tabindex="0">
+                <span class="option-icon">🌸</span>
+                <div class="option-text-group">
+                  <span class="option-title">Hydrangea (Default)</span>
+                  <span class="option-subtitle">Signature periwinkle &amp; lilac palette</span>
+                </div>
+                <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+
+              <div class="custom-select-option" data-value="custom" role="option" aria-selected="false" tabindex="0">
+                <span class="option-icon">🎨</span>
+                <div class="option-text-group">
+                  <span class="option-title">Custom / Logo Brand</span>
+                  <span class="option-subtitle">Auto-extracted from company logo</span>
+                </div>
+                <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            </div>
+
+            <!-- Hidden select for form compatibility -->
+            <select id="themeModeSelect" class="sr-only" aria-hidden="true" tabindex="-1">
+              <option value="hydrangea" selected>Hydrangea (Default)</option>
+              <option value="custom">Custom / Logo Brand</option>
+            </select>
           </div>
-          <label style="margin-left:12px">Tax %</label>
-          <input id="taxPercent" type="number" min="0" max="100" step="0.5" value="18">
-          <button id="applyTax" class="ghost" style="margin-left:6px">Apply</button>
+
+          <!-- Custom Color Picker (active when Custom / Logo Theme is chosen) -->
+          <div id="customColorPickerWrap" class="color-picker-wrapper" style="display: none;" title="Pick custom brand color">
+            <input type="color" id="colorPicker" value="#6366f1" aria-label="Custom Brand Color" />
+          </div>
         </div>
 
-        <div class="toolbar">
-          <button id="downloadPdfBtn">Download PDF</button>
-          <button id="resetBtn" class="ghost">Reset</button>
-        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="loadDemoBtn" title="Fill realistic sample data">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          Demo Data
+        </button>
+
+        <button type="button" class="btn btn-ghost btn-sm" id="resetBtn" title="Reset all form fields">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Reset
+        </button>
+
+        <button type="button" class="btn btn-secondary btn-sm" id="printBtn" title="Print invoice directly (Ctrl+P)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print
+        </button>
+
+        <button type="button" class="btn btn-primary" id="downloadPdfBtn" title="Generate and download A4 PDF">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Download PDF
+        </button>
       </div>
     </div>
+  </header>
 
-    <!-- invoice content -->
-    <div class="card" id="invoiceRoot">
-      <div class="invoice-header">
-        <div class="logo-box" id="logoBox"><span class="muted">Logo</span></div>
-
-        <div class="company-block">
-          <h1 id="companyName" class="editable is-empty" contenteditable data-placeholder="Company Name"></h1>
-          <p id="companyAddress" class="editable is-empty" contenteditable data-placeholder="Address line 1, City, State"></p>
-          <p class="muted" style="margin-top:8px">
-            <span id="companyEmail" class="editable is-empty" contenteditable data-placeholder="email@example.com"></span>
-            <span style="margin:0 8px">|</span>
-            <span id="companyPhone" class="editable is-empty" contenteditable data-placeholder="Mobile number"></span>
-          </p>
+  <!-- Main Workspace -->
+  <main class="app-workspace" id="appWorkspace">
+    <!-- LEFT PANE: Form Editor -->
+    <section class="editor-pane" id="editorPane" aria-label="Invoice Editor Form">
+      <!-- 1. Company Information -->
+      <article class="editor-card">
+        <div class="card-title-bar">
+          <h2 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 11h2M6 15h2M10 11h2M10 15h2M14 11h2M14 15h2M18 11h2M18 15h2M9 3h6v4H9z"/></svg>
+            Company Information
+          </h2>
         </div>
 
-        <div class="header-right">
-          <div class="tax-badge" id="taxBadge">TAX INVOICE</div>
-          <div class="meta-list">
-            <div><span class="label">Invoice No</span><div id="invoiceNo" class="value editable is-empty" contenteditable data-placeholder="Invoice No (e.g. INV-1)"></div></div>
-            <div style="margin-top:8px"><span class="label">Date</span><div id="invoiceDate" class="value editable is-empty" contenteditable data-placeholder="DD-MM-YYYY"></div></div>
-            <div style="margin-top:8px"><span class="label">Sale Type</span><div id="saleType" class="value editable is-empty" contenteditable data-placeholder="INTERSTATE SALE"></div></div>
-          </div>
-        </div>
-      </div>
+        <div class="form-grid">
+          <div class="col-12">
+            <!-- Premium Interactive Logo Drag & Drop Box -->
+            <div class="logo-drop-box" id="logoDropBox" tabindex="0" role="button" aria-label="Upload company logo">
+              <input type="file" id="logoInput" class="hidden-file-input" accept="image/*" />
+              
+              <!-- Drop Prompt (shown when no logo uploaded) -->
+              <div class="drop-zone-content" id="logoDropPrompt">
+                <div class="drop-icon-wrapper" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                  </svg>
+                </div>
+                <div class="drop-text-group">
+                  <p class="drop-main-text"><strong>Drag &amp; drop company logo here</strong>, or <span class="drop-browse-link">browse</span></p>
+                  <p class="drop-sub-text">PNG, JPG, SVG, WebP &bull; Auto-extracts brand palette</p>
+                </div>
+              </div>
 
-      <div class="two-col" style="margin-top:12px">
-        <div class="info-box">
-          <div class="label">Party Name / Buyer</div>
-          <div id="buyerName" class="value editable is-empty" contenteditable data-placeholder="Buyer name"></div>
-
-          <div style="height:10px"></div>
-          <div class="label">Address</div>
-          <div id="buyerAddress" class="editable is-empty muted" contenteditable data-placeholder="Buyer address"></div>
-
-          <div style="height:10px"></div>
-          <div class="label">Party GST No</div>
-          <div id="buyerGst" class="value editable is-empty" contenteditable data-placeholder="Party GST No"></div>
-
-          <div style="height:10px"></div>
-          <div class="label">State Code</div>
-          <div id="stateCode" class="editable is-empty muted" contenteditable data-placeholder="State Code"></div>
-        </div>
-
-        <div class="info-box">
-          <div class="label">Vehicle No</div>
-          <div id="vehicleNo" class="editable is-empty muted" contenteditable data-placeholder=""></div>
-
-          <div style="height:10px"></div>
-          <div class="label">Phone / Contact</div>
-          <div id="contact" class="editable is-empty muted" contenteditable data-placeholder=""></div>
-
-          <div style="height:10px"></div>
-          <div class="label">GSTIN (Company)</div>
-          <div id="companyGst" class="value editable is-empty" contenteditable data-placeholder=""></div>
-        </div>
-      </div>
-
-      <!-- items card -->
-      <div class="card" style="margin-top:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <strong>Items</strong>
-          <div style="display:flex;gap:8px">
-            <button id="addRowBtn" class="ghost">Add Row</button>
-            <button id="clearRowsBtn" class="ghost">Clear Rows</button>
-          </div>
-        </div>
-
-        <table class="items" id="itemsTable" aria-label="Invoice items">
-          <thead>
-            <tr>
-              <th class="sno">S.NO</th>
-              <th>Item Name</th>
-              <th style="width:110px">HS CODE</th>
-              <th style="width:110px">Qty</th>
-              <th style="width:120px">Rate</th>
-              <th style="width:140px">Total Amount</th>
-              <th style="width:60px">✖</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-
-        <div class="totals-wrap">
-          <div class="totals" role="group" aria-label="Totals">
-            <div class="row"><div class="muted">Total Qty</div><div id="totalQty">0</div></div>
-            <div class="row"><div class="muted">Amount</div><div id="totalAmount">0.00</div></div>
-            <div class="row" id="cgstRow"><div class="muted">CGST (<span id="cgstPct">9</span>%)</div><div id="cgst">0.00</div></div>
-            <div class="row" id="sgstRow"><div class="muted">SGST (<span id="sgstPct">9</span>%)</div><div id="sgst">0.00</div></div>
-            <div class="row" id="igstRow" style="display:none"><div class="muted">IGST (<span id="igstPct">18</span>%)</div><div id="igst">0.00</div></div>
-            <div style="height:8px"></div>
-            <div class="row" style="font-weight:800"><div>Total</div><div id="grandTotal">0.00</div></div>
-          </div>
-        </div>
-
-        <div style="margin-top:12px;display:flex;gap:12px;align-items:flex-start">
-          <div style="flex:1">
-            <div class="label">Amount in Words</div>
-            <!-- Made non-editable / fixed. data-auto="true" so script will fill it -->
-            <div id="amountWords" class="muted" data-placeholder="Amount in words" data-auto="true"></div>
+              <!-- Uploaded Logo Preview Card (shown when logo is uploaded) -->
+              <div class="logo-uploaded-card" id="logoUploadedCard" style="display: none;">
+                <div class="logo-thumb-wrapper" id="editorLogoPreview">
+                  <!-- Rendered image -->
+                </div>
+                <div class="logo-meta-info">
+                  <div class="logo-active-badge">
+                    <span class="badge-dot"></span> Logo Active
+                  </div>
+                  <span class="logo-meta-hint">Brand colors synced automatically</span>
+                </div>
+                <div class="logo-card-actions">
+                  <label for="logoInput" class="btn btn-secondary btn-sm" style="cursor:pointer;" title="Choose another logo">Change</label>
+                  <button type="button" class="btn btn-danger-ghost btn-sm" id="removeLogoBtn" title="Remove logo">Remove</button>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div style="width:100%;max-width:520px">
-            <!-- Payment type selector -->
-            <div class="label">Payment Type</div>
-            <div class="payment-row" style="margin-bottom:10px">
-              <label for="paymentType" class="small">Choose:</label>
-              <select id="paymentType" aria-label="Payment Type">
+          <div class="col-12 form-group">
+            <label for="companyName" class="form-label">Company / Business Name</label>
+            <input type="text" id="companyName" class="form-control" placeholder="e.g. Acme Innovations Pvt. Ltd." />
+          </div>
+
+          <div class="col-12 form-group">
+            <label for="companyAddress" class="form-label">Registered Address</label>
+            <textarea id="companyAddress" class="form-control" placeholder="Office / Shop Address, City, State, PIN Code"></textarea>
+          </div>
+
+          <div class="col-6 form-group">
+            <label for="companyEmail" class="form-label">Email Address <span class="optional-tag">Optional</span></label>
+            <input type="email" id="companyEmail" class="form-control" placeholder="billing@example.com" />
+          </div>
+
+          <div class="col-6 form-group">
+            <label for="companyPhone" class="form-label">Phone / Mobile <span class="optional-tag">Optional</span></label>
+            <input type="text" id="companyPhone" class="form-control" placeholder="+91 98765 43210" />
+          </div>
+
+          <div class="col-12 form-group">
+            <label for="companyGst" class="form-label">Company GSTIN <span class="optional-tag">Optional</span></label>
+            <input type="text" id="companyGst" class="form-control" placeholder="e.g. 29ABCDE1234F1Z5" maxlength="15" />
+          </div>
+        </div>
+      </article>
+
+      <!-- 2. Invoice Metadata -->
+      <article class="editor-card">
+        <div class="card-title-bar">
+          <h2 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+            Invoice Details
+          </h2>
+        </div>
+
+        <div class="form-grid">
+          <div class="col-4 form-group">
+            <label for="invoiceNo" class="form-label">Invoice Number</label>
+            <input type="text" id="invoiceNo" class="form-control" placeholder="INV-1" />
+          </div>
+
+          <div class="col-4 form-group">
+            <label for="invoiceDate" class="form-label">Invoice Date</label>
+            <input type="text" id="invoiceDate" class="form-control" placeholder="DD-MM-YYYY" />
+          </div>
+
+          <div class="col-4 form-group">
+            <label for="saleType" class="form-label">Sale / Invoice Type</label>
+            <input type="text" id="saleType" class="form-control" placeholder="TAX INVOICE" />
+          </div>
+        </div>
+      </article>
+
+      <!-- 3. Buyer / Customer Details -->
+      <article class="editor-card">
+        <div class="card-title-bar">
+          <h2 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Buyer / Party Details
+          </h2>
+        </div>
+
+        <div class="form-grid">
+          <div class="col-12 form-group">
+            <label for="buyerName" class="form-label">Buyer / Customer Name</label>
+            <input type="text" id="buyerName" class="form-control" placeholder="Client Name or Business" />
+          </div>
+
+          <div class="col-12 form-group">
+            <label for="buyerAddress" class="form-label">Billing Address</label>
+            <textarea id="buyerAddress" class="form-control" placeholder="Customer address, city, state"></textarea>
+          </div>
+
+          <div class="col-6 form-group">
+            <label for="buyerGst" class="form-label">Party GSTIN <span class="optional-tag">Optional</span></label>
+            <input type="text" id="buyerGst" class="form-control" placeholder="e.g. 27XYZAB5678C1Z2" maxlength="15" />
+          </div>
+
+          <div class="col-6 form-group">
+            <label for="stateCode" class="form-label">State &amp; Code <span class="optional-tag">Optional</span></label>
+            <input type="text" id="stateCode" class="form-control" placeholder="e.g. 27 (Maharashtra)" />
+          </div>
+
+          <div class="col-6 form-group">
+            <label for="vehicleNo" class="form-label">Vehicle No <span class="optional-tag">Optional</span></label>
+            <input type="text" id="vehicleNo" class="form-control" placeholder="e.g. MH-02-AB-1234" />
+          </div>
+
+          <div class="col-6 form-group">
+            <label for="contact" class="form-label">Contact / Phone <span class="optional-tag">Optional</span></label>
+            <input type="text" id="contact" class="form-control" placeholder="+91 91234 56789" />
+          </div>
+        </div>
+      </article>
+
+      <!-- 4. Line Items Table -->
+      <article class="editor-card">
+        <div class="card-title-bar">
+          <h2 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            Invoice Items
+          </h2>
+        </div>
+
+        <div class="items-table-wrapper">
+          <table class="editor-items-table" aria-label="Invoice items editor">
+            <thead>
+              <tr>
+                <th style="width: 36px; text-align: center;">#</th>
+                <th>Item Description</th>
+                <th style="width: 100px;">HS/SAC</th>
+                <th style="width: 85px; text-align: right;">Qty</th>
+                <th style="width: 105px; text-align: right;">Rate (₹)</th>
+                <th style="width: 100px; text-align: right;">Total</th>
+                <th style="width: 44px; text-align: center;"></th>
+              </tr>
+            </thead>
+            <tbody id="editorItemsTbody">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="items-action-bar">
+          <button type="button" class="btn btn-secondary btn-sm" id="addRowBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Add Line Item
+          </button>
+          <button type="button" class="btn btn-danger-ghost btn-sm" id="clearRowsBtn">
+            Clear All Items
+          </button>
+        </div>
+      </article>
+
+      <!-- 5. Tax & Payment Settings -->
+      <article class="editor-card">
+        <div class="card-title-bar">
+          <h2 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            Tax &amp; Payment Configuration
+          </h2>
+        </div>
+
+        <div class="form-grid">
+          <div class="col-12">
+            <div class="tax-settings-box">
+              <div class="radio-group">
+                <span style="font-weight:700;font-size:0.85rem;color:var(--text-main);">Tax Mode:</span>
+                <label class="radio-label">
+                  <input type="radio" name="taxMode" value="cgst" checked /> CGST + SGST (50/50)
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="taxMode" value="igst" /> IGST
+                </label>
+              </div>
+
+              <div class="tax-rate-input-group">
+                <label for="taxPercent" style="font-weight:600;font-size:0.85rem;color:var(--text-muted);">Tax Rate %:</label>
+                <input type="number" id="taxPercent" class="form-control" min="0" max="100" step="0.5" value="18" />
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 form-group" style="margin-top:6px;">
+            <label id="paymentTypeLabel" class="form-label">Payment Mode</label>
+            <div class="custom-select-wrapper" id="paymentDropdown">
+              <button type="button" class="custom-select-trigger" id="paymentDropdownTrigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="paymentTypeLabel">
+                <span class="select-current-content">
+                  <span class="select-option-icon">💵</span>
+                  <span class="select-current-text">Cash Payment</span>
+                </span>
+                <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+
+              <!-- Floating Glassmorphic Dropdown Menu -->
+              <div class="custom-select-menu" id="paymentDropdownMenu" role="listbox" aria-label="Payment modes">
+                <div class="custom-select-option is-selected" data-value="Cash" role="option" aria-selected="true" tabindex="0">
+                  <span class="option-icon">💵</span>
+                  <div class="option-text-group">
+                    <span class="option-title">Cash Payment</span>
+                    <span class="option-subtitle">Direct settlement (no bank fields required)</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+
+                <div class="custom-select-option" data-value="Online" role="option" aria-selected="false" tabindex="0">
+                  <span class="option-icon">💳</span>
+                  <div class="option-text-group">
+                    <span class="option-title">Online / NEFT / UPI / RTGS</span>
+                    <span class="option-subtitle">Displays bank account number and IFSC</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+
+                <div class="custom-select-option" data-value="Check" role="option" aria-selected="false" tabindex="0">
+                  <span class="option-icon">📝</span>
+                  <div class="option-text-group">
+                    <span class="option-title">Cheque / Bank Draft</span>
+                    <span class="option-subtitle">Bank clearance instrument</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+              </div>
+
+              <!-- Hidden select for form compatibility -->
+              <select id="paymentType" class="sr-only" aria-hidden="true" tabindex="-1">
                 <option value="Cash" selected>Cash</option>
                 <option value="Online">Online</option>
                 <option value="Check">Check</option>
               </select>
             </div>
+          </div>
 
-            <div class="label">Bank Details</div>
-            <!-- Wrap bank details so we can hide/show easily -->
-            <div id="bankSection" style="padding:12px;border-radius:10px;border:1px solid var(--card-border);background:var(--card-bg)">
-              <div class="bank-inline" style="padding:0">
-                <span class="label">Bank Name:</span>
-                <div id="bankName" class="field editable is-empty" contenteditable data-placeholder="SBI"></div>
-
-                <span class="label">A/C:</span>
-                <div id="bankAccount" class="field editable is-empty" contenteditable data-placeholder="1234567890"></div>
-
-                <span class="label">IFSC:</span>
-                <div id="bankIfsc" class="field editable is-empty" contenteditable data-placeholder="SBIN0001234"></div>
+          <!-- Dynamic Bank Section -->
+          <div class="col-12" id="editorBankSection" style="display:none;">
+            <div class="form-grid" style="background:var(--bg-subtle);padding:12px;border-radius:var(--radius-md);border:1px solid var(--border-color);">
+              <div class="col-4 form-group">
+                <label for="bankName" class="form-label">Bank Name</label>
+                <input type="text" id="bankName" class="form-control" placeholder="e.g. HDFC Bank" />
+              </div>
+              <div class="col-4 form-group">
+                <label for="bankAccount" class="form-label">Account Number</label>
+                <input type="text" id="bankAccount" class="form-control" placeholder="e.g. 50100023456789" />
+              </div>
+              <div class="col-4 form-group">
+                <label for="bankIfsc" class="form-label">IFSC Code</label>
+                <input type="text" id="bankIfsc" class="form-control" placeholder="e.g. HDFC0001234" />
               </div>
             </div>
           </div>
         </div>
+      </article>
+
+      <!-- 6. Terms & Signature -->
+      <article class="editor-card">
+        <div class="card-title-bar">
+          <h2 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Terms &amp; Signature
+          </h2>
+        </div>
+
+        <div class="form-grid">
+          <div class="col-12 form-group">
+            <label for="termsText" class="form-label">Terms &amp; Conditions</label>
+            <textarea id="termsText" class="form-control" rows="2" placeholder="Enter terms and conditions"></textarea>
+          </div>
+
+          <div class="col-12 form-group">
+            <label for="companySign" class="form-label">Signatory Entity Name</label>
+            <input type="text" id="companySign" class="form-control" placeholder="For [Company Name]" />
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- RIGHT PANE: Live A4 Document Preview -->
+    <aside class="preview-pane" id="previewPane" aria-label="Live Invoice Preview">
+      <div class="preview-toolbar">
+        <div class="preview-status">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span>Live Document Preview</span>
+        </div>
+        <div class="preview-actions">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="window.print()" title="Print invoice">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Print
+          </button>
+        </div>
       </div>
 
-      <!-- footer -->
-      <div class="footer">
-        <div class="terms">
-          <div style="font-weight:700;margin-bottom:6px">Terms & Conditions</div>
-          <div id="termsText" class="editable is-empty muted" contenteditable data-placeholder="1. Our responsibility ceases as soon as the goods leave our premises. 2. Delivery ex premises."></div>
-        </div>
+      <div class="paper-container" id="paperContainer">
+        <!-- The Print-Friendly A4 Invoice Canvas -->
+        <div class="invoice-paper" id="invoicePaper">
+          <!-- Document Header -->
+          <div class="doc-header">
+            <div class="doc-brand-block">
+              <img id="previewCompanyLogo" class="doc-logo" alt="Company Logo" style="display:none;" />
+              <div class="doc-company-info">
+                <h2 id="previewCompanyName">Your Company Name</h2>
+                <p id="previewCompanyAddress">Company Address Line, City, State, PIN</p>
+                <p id="previewCompanyContact" style="margin-top: 4px; font-weight: 500;"></p>
+              </div>
+            </div>
 
-        <div class="signature">
-          <div class="title">Receiver's Signature</div>
-          <div style="height:10px"></div>
-          <div class="for">For <span id="companySign" class="editable is-empty" contenteditable data-placeholder="Your Company"></span></div>
+            <div class="doc-meta-block">
+              <div class="doc-tax-badge" id="previewSaleType">TAX INVOICE</div>
+              <table class="doc-meta-table">
+                <tr>
+                  <td class="meta-lbl">Invoice No:</td>
+                  <td class="meta-val" id="previewInvoiceNo">INV-1</td>
+                </tr>
+                <tr>
+                  <td class="meta-lbl">Date:</td>
+                  <td class="meta-val" id="previewInvoiceDate">DD-MM-YYYY</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <!-- Parties Grid -->
+          <div class="doc-parties-grid">
+            <div class="doc-info-card">
+              <div class="doc-info-card-title">Billed To (Buyer / Client)</div>
+              <div class="doc-party-name" id="previewBuyerName">Buyer / Client Name</div>
+              <div class="doc-party-address" id="previewBuyerAddress">Buyer billing address details</div>
+              <div class="doc-kv-row">
+                <span class="doc-kv-label">GSTIN:</span>
+                <span class="doc-kv-val" id="previewBuyerGst">-</span>
+              </div>
+              <div class="doc-kv-row">
+                <span class="doc-kv-label">State Code:</span>
+                <span class="doc-kv-val" id="previewStateCode">-</span>
+              </div>
+            </div>
+
+            <div class="doc-info-card">
+              <div class="doc-info-card-title">Dispatch &amp; Supplier Details</div>
+              <div class="doc-kv-row">
+                <span class="doc-kv-label">Supplier GSTIN:</span>
+                <span class="doc-kv-val" id="previewCompanyGst">-</span>
+              </div>
+              <div class="doc-kv-row">
+                <span class="doc-kv-label">Vehicle No:</span>
+                <span class="doc-kv-val" id="previewVehicleNo">-</span>
+              </div>
+              <div class="doc-kv-row">
+                <span class="doc-kv-label">Contact No:</span>
+                <span class="doc-kv-val" id="previewContact">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Items Table -->
+          <table class="doc-items-table" aria-label="Printed invoice items">
+            <thead>
+              <tr>
+                <th class="doc-col-sno">S.No</th>
+                <th class="doc-col-name">Item Description</th>
+                <th class="doc-col-hs">HSN/SAC</th>
+                <th class="doc-col-qty">Qty</th>
+                <th class="doc-col-rate">Rate</th>
+                <th class="doc-col-total">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="previewDocItemsTbody">
+              <!-- Dynamically populated in preview -->
+            </tbody>
+          </table>
+
+          <!-- Summary & Totals -->
+          <div class="doc-summary-section">
+            <div class="doc-words-and-bank">
+              <div class="doc-amount-words-box">
+                <div class="doc-amount-words-title">Amount Chargeable (in words)</div>
+                <div class="doc-amount-words-text" id="previewAmountWords">Zero Rupees Only</div>
+              </div>
+
+              <div class="doc-bank-box" id="previewBankBox" style="display:none;">
+                <div class="doc-amount-words-title">Bank &amp; Payment Details (<span id="previewPaymentType">Online</span>)</div>
+                <div class="doc-kv-row">
+                  <span class="doc-kv-label">Bank Name:</span>
+                  <span class="doc-kv-val" id="previewBankName">-</span>
+                </div>
+                <div class="doc-kv-row">
+                  <span class="doc-kv-label">Account No:</span>
+                  <span class="doc-kv-val" id="previewBankAccount">-</span>
+                </div>
+                <div class="doc-kv-row">
+                  <span class="doc-kv-label">IFSC Code:</span>
+                  <span class="doc-kv-val" id="previewBankIfsc">-</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="doc-totals-box">
+              <div class="doc-total-row">
+                <span>Total Quantity:</span>
+                <span id="previewTotalQty">0</span>
+              </div>
+              <div class="doc-total-row">
+                <span>Taxable Amount:</span>
+                <span id="previewSubtotal">₹0.00</span>
+              </div>
+              <div class="doc-total-row" id="previewCgstRow">
+                <span id="previewCgstLabel">CGST (9%)</span>
+                <span id="previewCgstVal">₹0.00</span>
+              </div>
+              <div class="doc-total-row" id="previewSgstRow">
+                <span id="previewSgstLabel">SGST (9%)</span>
+                <span id="previewSgstVal">₹0.00</span>
+              </div>
+              <div class="doc-total-row" id="previewIgstRow" style="display:none;">
+                <span id="previewIgstLabel">IGST (18%)</span>
+                <span id="previewIgstVal">₹0.00</span>
+              </div>
+              <div class="doc-total-row grand-total">
+                <span>Grand Total:</span>
+                <span id="previewGrandTotal">₹0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Document Footer -->
+          <div class="doc-footer">
+            <div class="doc-terms">
+              <h4>Terms &amp; Conditions</h4>
+              <p id="previewTerms">1. Goods once sold will not be taken back or exchanged.</p>
+            </div>
+
+            <div class="doc-signature-block">
+              <div class="doc-sign-for" id="previewSignFor">For Your Company</div>
+              <div class="doc-sign-lbl">Authorized Signatory</div>
+            </div>
+          </div>
         </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- App Footer -->
+  <footer class="app-footer" role="contentinfo">
+    <div class="app-footer-content">
+      <div>
+        <strong>Billvex</strong> &copy; 2025&ndash;2026 Manidwiptam Halder. Released under the MIT License.
+      </div>
+      <div class="footer-links">
+        <a class="footer-link" id="disclaimerLink" role="button" tabindex="0">Legal Disclaimer</a>
+        <a class="footer-link" id="privacyLink" role="button" tabindex="0">Privacy &amp; Data Security</a>
+        <a class="footer-link" href="https://github.com/manidwiptam/Billvex" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification Mount Point -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Modals -->
+  <!-- Reset Confirmation Modal -->
+  <div class="modal-backdrop" id="confirmResetModal" role="dialog" aria-modal="true" aria-labelledby="resetModalTitle" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="resetModalTitle">Reset Invoice Form?</h3>
+        <button type="button" class="btn btn-ghost btn-sm btn-icon-only" data-modal-close aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to reset all invoice fields? This will clear the current draft and restore default settings.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmResetBtn">Confirm Reset</button>
       </div>
     </div>
   </div>
 
-  <!-- libs -->
+  <!-- Clear Rows Confirmation Modal -->
+  <div class="modal-backdrop" id="confirmClearRowsModal" role="dialog" aria-modal="true" aria-labelledby="clearRowsModalTitle" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="clearRowsModalTitle">Clear Line Items?</h3>
+        <button type="button" class="btn btn-ghost btn-sm btn-icon-only" data-modal-close aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to remove all line items from this invoice?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmClearRowsBtn">Clear Items</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legal Disclaimer Modal -->
+  <div class="modal-backdrop" id="disclaimerModal" role="dialog" aria-modal="true" aria-labelledby="disclaimerModalTitle" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="disclaimerModalTitle">Legal &amp; Compliance Disclaimer</h3>
+        <button type="button" class="btn btn-ghost btn-sm btn-icon-only" data-modal-close aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Important Notice:</strong></p>
+        <p style="margin-top:8px;">
+          Billvex is a software utility for creating and exporting invoices/bills. It does not provide legal, tax, accounting, or compliance advice. Users are responsible for verifying that invoices generated with the application meet the requirements applicable to their business, location, transaction, and tax status.
+        </p>
+        <p style="margin-top:12px;">
+          Billvex is not affiliated with, authorized by, or endorsed by any government entity, tax authority, or official department. Tax calculation modes (such as CGST, SGST, IGST) and HSN/SAC codes are configurable user-entered fields provided for convenience only.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-modal-close>I Understand</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Privacy & Data Security Modal -->
+  <div class="modal-backdrop" id="privacyModal" role="dialog" aria-modal="true" aria-labelledby="privacyModalTitle" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="privacyModalTitle">Privacy &amp; Data Security</h3>
+        <button type="button" class="btn btn-ghost btn-sm btn-icon-only" data-modal-close aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p><strong>100% Local-First &amp; Private:</strong></p>
+        <ul style="margin-top:8px;padding-left:20px;line-height:1.6;">
+          <li>All invoice data, customer details, tax figures, bank accounts, and uploaded logos are processed purely inside your local browser.</li>
+          <li>No invoice data is sent to external servers or cloud databases.</li>
+          <li>No telemetry, analytics, or third-party user tracking scripts are included.</li>
+          <li>Auto-saved drafts and the sequential invoice counter are stored strictly in your browser's local storage (<code>localStorage</code>) and can be cleared at any time via the Reset button.</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-modal-close>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Third-party Client Libraries (HTML2Canvas, jsPDF & Lenis Smooth Scroll) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
 
-  <script>
-    // Helper functions
-    const toNum = v => Number(String(v).replace(/[^0-9.-]/g,'')) || 0;
-    const fix2 = n => Number(Math.round(n*100)/100).toFixed(2);
-
-    // Number to words (Indian style, Rupees)
-    function numberToWords(num){
-      if (isNaN(num)) return '';
-      num = Math.floor(num);
-      if (num === 0) return 'Zero Rupees';
-      const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
-      const b=['','', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
-      function twoDigit(n){ if (n<20) return a[n]; return b[Math.floor(n/10)] + (n%10? ' ' + a[n%10] : ''); }
-      function threeDigit(n){ if (n<100) return twoDigit(n); const rem=n%100; return a[Math.floor(n/100)] + ' Hundred' + (rem ? ' ' + twoDigit(rem) : ''); }
-      let words='';
-      const crore = Math.floor(num / 10000000);
-      const lakh  = Math.floor((num%10000000) / 100000);
-      const thousand = Math.floor((num%100000) / 1000);
-      const hundred = Math.floor((num%1000));
-      if (crore) words += (threeDigit(crore) + ' Crore ');
-      if (lakh) words += (twoDigit(lakh) + ' Lakh ');
-      if (thousand) words += (twoDigit(thousand) + ' Thousand ');
-      if (hundred) words += (threeDigit(hundred) + ' ');
-      return (words.trim() + ' Rupees').replace(/\s+/g,' ');
-    }
-
-    // Placeholder handling for contenteditable elements
-    function updateEmptyState(el){
-      if (!el) return;
-      const txt = el.textContent || '';
-      if (txt.trim() === '') el.classList.add('is-empty'); else el.classList.remove('is-empty');
-    }
-    function initPlaceholders(){
-      const eds = Array.from(document.querySelectorAll('.editable, .field'));
-      eds.forEach(el=>{
-        updateEmptyState(el);
-        el.addEventListener('focus', ()=>{
-          el.classList.remove('is-empty');
-          const ph = el.getAttribute('data-placeholder') || '';
-          if (el.textContent.trim() === ph.trim()) el.textContent = '';
-          placeCaretAtEnd(el);
-        });
-        el.addEventListener('blur', ()=> updateEmptyState(el));
-        el.addEventListener('input', ()=> {
-          updateEmptyState(el);
-          updateTotals();
-        });
-      });
-    }
-    function placeCaretAtEnd(el){
-      try{
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        range.collapse(false);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }catch(e){}
-    }
-
-    // Items table logic with animation
-    const tbody = document.querySelector('#itemsTable tbody');
-
-    function addRow(data = {}, focus = true){
-      const idx = tbody.children.length + 1;
-      const tr = document.createElement('tr');
-      tr.classList.add('new-row');
-      tr.innerHTML = `
-        <td class="sno">${idx}</td>
-        <td><input type="text" class="itemName" placeholder="Item name" value="${escapeHtml(data.name||'')}" /></td>
-        <td><input type="text" class="hs" placeholder="4403" value="${escapeHtml(data.hs||'')}" /></td>
-        <td><input type="number" step="0.001" class="qty" placeholder="0" value="${escapeHtml(data.qty||'')}" /></td>
-        <td><input type="number" step="0.01" class="rate" placeholder="0.00" value="${escapeHtml(data.rate||'')}" /></td>
-        <td class="rowTotal">0.00</td>
-        <td class="center"><button class="del-row-btn" title="Delete row">✖</button></td>
-      `;
-      tbody.appendChild(tr);
-
-      // remove new-row class after animation
-      setTimeout(()=> tr.classList.remove('new-row'), 400);
-
-      tr.querySelectorAll('.qty, .rate').forEach(el=>{
-        el.addEventListener('input', updateTotals);
-        if (el.classList.contains('rate')) {
-          el.addEventListener('keydown', (e)=>{
-            if (e.key === 'Enter') { e.preventDefault(); addRow({}, true); }
-          });
-        }
-      });
-
-      tr.querySelector('.del-row-btn').addEventListener('click', ()=>{
-        tr.classList.add('removing');
-        // wait for animation then remove
-        tr.addEventListener('animationend', ()=>{ tr.remove(); renumber(); updateTotals(); }, { once:true });
-      });
-
-      if (focus) {
-        const firstInput = tr.querySelector('.itemName');
-        if (firstInput) firstInput.focus();
-      }
-
-      updateTotals();
-    }
-
-    function renumber(){
-      Array.from(tbody.children).forEach((tr,i)=> tr.querySelector('.sno').textContent = i+1);
-    }
-    function clearRows(){ tbody.innerHTML = ''; updateTotals(); }
-
-    // GST handling
-    let taxMode = 'cgst'; // 'cgst' or 'igst'
-    let taxPercent = 18;
-
-    function applyTaxSettings(){
-      taxPercent = parseFloat(document.getElementById('taxPercent').value) || 0;
-      const mode = document.querySelector('input[name="taxMode"]:checked').value;
-      taxMode = mode;
-      if (mode === 'cgst') {
-        // split equally
-        const half = taxPercent / 2;
-        document.getElementById('cgstPct').textContent = fix2(half).replace('.00','');
-        document.getElementById('sgstPct').textContent = fix2(half).replace('.00','');
-        document.getElementById('cgstRow').style.display = '';
-        document.getElementById('sgstRow').style.display = '';
-        document.getElementById('igstRow').style.display = 'none';
-      } else {
-        document.getElementById('igstPct').textContent = fix2(taxPercent).replace('.00','');
-        document.getElementById('cgstRow').style.display = 'none';
-        document.getElementById('sgstRow').style.display = 'none';
-        document.getElementById('igstRow').style.display = '';
-      }
-      updateTotals();
-    }
-
-    function updateTotals(){
-      let totalQty = 0, amount = 0;
-      Array.from(tbody.children).forEach(tr=>{
-        const qEl = tr.querySelector('.qty');
-        const rEl = tr.querySelector('.rate');
-        const qty = toNum(qEl?.value ?? 0);
-        const rate = toNum(rEl?.value ?? 0);
-        const rowTotal = qty * rate;
-        tr.querySelector('.rowTotal').textContent = fix2(rowTotal);
-        totalQty += qty;
-        amount += rowTotal;
-      });
-
-      document.getElementById('totalQty').textContent = totalQty ? totalQty.toFixed(3) : '0';
-      document.getElementById('totalAmount').textContent = fix2(amount);
-
-      if (taxMode === 'cgst') {
-        const half = taxPercent / 2;
-        const cgst = amount * (half/100);
-        const sgst = amount * (half/100);
-        document.getElementById('cgst').textContent = fix2(cgst);
-        document.getElementById('sgst').textContent = fix2(sgst);
-        document.getElementById('igst').textContent = '0.00';
-        const grand = amount + cgst + sgst;
-        document.getElementById('grandTotal').textContent = fix2(grand);
-      } else {
-        const igst = amount * (taxPercent/100);
-        document.getElementById('igst').textContent = fix2(igst);
-        document.getElementById('cgst').textContent = '0.00';
-        document.getElementById('sgst').textContent = '0.00';
-        const grand = amount + igst;
-        document.getElementById('grandTotal').textContent = fix2(grand);
-      }
-
-      // amount in words auto
-      const aw = document.getElementById('amountWords');
-      const grand = parseFloat(document.getElementById('grandTotal').textContent || 0) || 0;
-      if (aw.classList.contains('is-empty') || aw.getAttribute('data-auto') === 'true') {
-        aw.textContent = numberToWords(Math.floor(grand));
-        aw.setAttribute('data-auto','true');
-        updateEmptyState(aw);
-      }
-    }
-
-    // HTML escape for input values
-    function escapeHtml(s){ if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-    // logo + color
-    document.getElementById('logoInput').addEventListener('change', (e) => {
-      const f = e.target.files && e.target.files[0];
-      if (!f) return;
-      const reader = new FileReader();
-      reader.onload = function(ev) {
-        const url = ev.target.result; // data URL (base64)
-        const img = document.createElement('img');
-        img.onload = () => {
-          const box = document.getElementById('logoBox');
-          box.innerHTML = '';
-          box.appendChild(img);
-        };
-        img.onerror = () => {
-          console.warn('Logo image failed to load');
-        };
-        img.src = url;
-      };
-      reader.readAsDataURL(f);
-    });
-    document.getElementById('colorPicker').addEventListener('input', (e)=> document.documentElement.style.setProperty('--blue', e.target.value));
-
-    // Payment type logic
-    const paymentSelect = document.getElementById('paymentType');
-    const bankSection = document.getElementById('bankSection');
-    const bankFields = Array.from(bankSection.querySelectorAll('.field'));
-
-    function updatePaymentTypeUI(){
-      const val = paymentSelect.value;
-      if (val === 'Cash') {
-        // hide bank section, clear & disable bank fields
-        bankSection.style.display = 'none';
-        bankSection.setAttribute('aria-hidden','true');
-        bankFields.forEach(f=>{
-          f.textContent = '';
-          f.classList.add('is-empty');
-          f.setAttribute('contenteditable','false');
-        });
-      } else {
-        // show bank section and enable fields
-        bankSection.style.display = '';
-        bankSection.setAttribute('aria-hidden','false');
-        bankFields.forEach(f=>{
-          f.setAttribute('contenteditable','true');
-          updateEmptyState(f);
-        });
-        // focus first bank field for convenience
-        setTimeout(()=> { bankFields[0]?.focus?.(); }, 40);
-      }
-    }
-
-    paymentSelect.addEventListener('change', updatePaymentTypeUI);
-
-    // buttons & controls
-    document.getElementById('addRowBtn').addEventListener('click', ()=> addRow({}));
-    document.getElementById('clearRowsBtn').addEventListener('click', ()=> { if (confirm('Clear all rows?')) clearRows(); });
-    document.getElementById('resetBtn').addEventListener('click', ()=> { if (confirm('Reset all fields to default?')) location.reload(); });
-
-    // tax apply
-    document.getElementById('applyTax').addEventListener('click', applyTaxSettings);
-    document.getElementById('taxPercent').addEventListener('keydown', (e)=> { if (e.key === 'Enter') applyTaxSettings(); });
-
-    // initial rows & placeholders
-    addRow({}); addRow({});
-    initPlaceholders();
-    applyTaxSettings();
-
-    // initialize payment UI (default select value)
-    updatePaymentTypeUI();
-
-    // Helper to wait for images inside a container to finish loading
-    function waitForImages(container) {
-      const imgs = Array.from(container.querySelectorAll('img'));
-      const promises = imgs.map(img => {
-        if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
-        return new Promise((res) => {
-          const done = () => res();
-          img.addEventListener('load', done, { once: true });
-          img.addEventListener('error', done, { once: true }); // resolve on error so export continues
-          // safety: if image stuck, timeout after 2s
-          setTimeout(done, 2000);
-        });
-      });
-      return Promise.all(promises);
-    }
-
-    // --------------------------
-    // Invoice counter logic (INV-1, INV-2, ...) with localStorage
-    // Behavior:
-    //  - On first load, show nextAvailableNumber (storedCounter + 1) if invoiceNo is empty.
-    //  - If user edits invoiceNo manually and enters a valid INV-n (or n), we WILL persist that as the new starting point
-    //    so future page loads will show next numbers from that (user requested "manual start from a specific number").
-    //  - When PDF is successfully saved, we commit the number shown (INV-n) to storage (so next becomes INV-(n+1)).
-    // --------------------------
-    const STORAGE_KEY = 'invoice_counter_v1';
-
-    function readCounter(){
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        let n = raw ? parseInt(raw, 10) : 0;
-        if (isNaN(n)) n = 0;
-        return n;
-      } catch (e) {
-        return 0;
-      }
-    }
-    function writeCounter(newValue){
-      try {
-        localStorage.setItem(STORAGE_KEY, String(newValue));
-        return true;
-      } catch(e) {
-        return false;
-      }
-    }
-    function nextAvailableNumber(){
-      return readCounter() + 1;
-    }
-
-    function getTodayDDMMYYYY(){
-      const d = new Date();
-      const DD = String(d.getDate()).padStart(2,'0');
-      const MM = String(d.getMonth()+1).padStart(2,'0');
-      const YYYY = d.getFullYear();
-      return `${DD}-${MM}-${YYYY}`;
-    }
-
-    function parseInvoiceNumber(str){
-      if (!str) return null;
-      // Accept formats like "INV-12", "INV 12", "inv12", "12"
-      const s = String(str).trim();
-      // try to find trailing number
-      const m = s.match(/(\d+)\s*$/);
-      if (m) return parseInt(m[1], 10);
-      return null;
-    }
-
-    function ensureInvoiceMeta(){
-      const dateEl = document.getElementById('invoiceDate');
-      const invNoEl = document.getElementById('invoiceNo');
-
-      // Auto-set date to DD-MM-YYYY if empty
-      if (!dateEl.textContent || dateEl.textContent.trim() === '') {
-        dateEl.textContent = getTodayDDMMYYYY();
-        dateEl.classList.remove('is-empty');
-      }
-
-      // Show next available INV number but DO NOT override manual edits
-      if (!invNoEl.textContent || invNoEl.textContent.trim() === '') {
-        const n = nextAvailableNumber();
-        invNoEl.textContent = `INV-${n}`;
-        invNoEl.classList.remove('is-empty');
-      }
-    }
-
-    // If user edits invoiceNo manually, persist that as new base (so default starts from it)
-    const invoiceNoEl = document.getElementById('invoiceNo');
-    invoiceNoEl.addEventListener('blur', ()=>{
-      updateEmptyState(invoiceNoEl);
-      const text = (invoiceNoEl.textContent || '').trim();
-      const parsed = parseInvoiceNumber(text);
-      if (parsed !== null && parsed > 0) {
-        // User entered a number - persist it as the current stored counter (so nextAvailable = parsed)
-        // We store parsed - 1 so nextAvailableNumber() returns parsed.
-        writeCounter(parsed - 1);
-        // Normalize display to INV-<parsed>
-        invoiceNoEl.textContent = `INV-${parsed}`;
-      }
-    });
-
-    // run initial meta setup on load
-    window.addEventListener('load', ()=>{
-      ensureInvoiceMeta();
-      initPlaceholders();
-    });
-
-    // --------------------------
-    // Client-side PDF generation (waits for images) and commit invoice counter on success
-    // --------------------------
-    document.getElementById('downloadPdfBtn').addEventListener('click', async ()=>{
-      const btn = document.getElementById('downloadPdfBtn');
-      btn.disabled = true; btn.textContent = 'Rendering...';
-
-      // Hide placeholders (make empty contenteditable truly empty) so PDF doesn't show faded placeholders
-      const editableEls = Array.from(document.querySelectorAll('.editable'));
-      const emptied = [];
-      editableEls.forEach(el=>{
-        if (el.classList.contains('is-empty')) {
-          emptied.push({ el, text: el.textContent });
-          el.textContent = '';
-        }
-      });
-
-      try {
-        const invoiceEl = document.getElementById('invoiceRoot');
-
-        // WAIT for images (including uploaded logo) to load before capturing
-        await waitForImages(invoiceEl);
-
-        // increase scale for good quality
-        const canvas = await html2canvas(invoiceEl, {scale:2, useCORS:true, backgroundColor:'#ffffff', scrollY: -window.scrollY});
-        const imgData = canvas.toDataURL('image/png');
-
-        // Use jsPDF in mm and fit to A4 size keeping aspect ratio
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({unit:'mm', format:'a4', orientation:'portrait'});
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-
-        // convert canvas px to mm using 96 DPI assumption: mm = px * 25.4 / dpi
-        const dpi = 96;
-        const imgWidthMM = canvas.width * 25.4 / dpi;
-        const imgHeightMM = canvas.height * 25.4 / dpi;
-
-        // scale to fit A4 with minimal margins
-        const margin = 8; // mm
-        let drawWidth = pageWidth - margin*2;
-        let drawHeight = (imgHeightMM * drawWidth) / imgWidthMM;
-
-        if (drawHeight > (pageHeight - margin*2)) {
-          drawHeight = pageHeight - margin*2;
-          drawWidth = (imgWidthMM * drawHeight) / imgHeightMM;
-        }
-
-        const x = (pageWidth - drawWidth) / 2;
-        const y = (pageHeight - drawHeight) / 2;
-
-        pdf.addImage(imgData, 'PNG', x, y, drawWidth, drawHeight, undefined, 'FAST');
-
-        // Filename: DD-MM-YYYY_INV-x (read from displayed fields)
-        const dateEl = document.getElementById('invoiceDate');
-        const invNoEl = document.getElementById('invoiceNo');
-        const dateStr = (dateEl.textContent || '').trim() || getTodayDDMMYYYY();
-        const invStr = (invNoEl.textContent || '').trim() || `INV-${nextAvailableNumber()}`;
-        const safeInv = invStr.replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
-        const safeDate = dateStr.replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
-        const filename = `${safeDate}_${safeInv}.pdf`;
-
-        // Save PDF (this will prompt the user)
-        pdf.save(filename);
-
-        // After successful generation/save, commit the invoice counter:
-        // We commit the number that was displayed (INV-n) so stored counter becomes n.
-        // Then we increment the in-page displayed invoice to the next available (n+1) for the next invoice.
-        try {
-          // extract numeric part of displayed invoice
-          const match = invStr.match(/(\d+)\s*$/);
-          let shownNum = match ? parseInt(match[1],10) : null;
-          if (shownNum === null) {
-            // fallback to nextAvailableNumber
-            shownNum = nextAvailableNumber();
-          }
-          // commit shownNum as current stored counter
-          writeCounter(shownNum);
-          // now update UI to next available invoice (shownNum+1)
-          const next = shownNum + 1;
-          invNoEl.textContent = `INV-${next}`;
-        } catch (e) {
-          console.warn('Failed to commit invoice counter:', e);
-        }
-
-      } catch (err) {
-        console.error(err);
-        alert('PDF generation failed: ' + (err.message || err));
-      } finally {
-        // restore emptied placeholders so UI stays same after export
-        emptied.forEach(item => item.el.textContent = item.text);
-        btn.disabled = false; btn.textContent = 'Download PDF';
-      }
-    });
-
-    // update totals periodically to keep sync when editing contenteditable fields
-    setInterval(updateTotals, 800);
-  </script>
+  <!-- Modular App Scripts -->
+  <script src="js/calculations.js"></script>
+  <script src="js/validation.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/pdf.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
