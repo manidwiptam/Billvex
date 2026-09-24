@@ -916,9 +916,9 @@
     }, 600);
   }
 
-  // Save current business details into permanent local storage
-  function saveSellerProfile() {
-    const profile = {
+  // Get currently entered business profile details from state
+  function getBusinessDataFromState() {
+    return {
       companyName: state.companyName || '',
       companyAddress: state.companyAddress || '',
       companyEmail: state.companyEmail || '',
@@ -936,62 +936,301 @@
       themeMode: state.themeMode || 'hydrangea',
       customColor: state.customColor || '#6366f1',
     };
+  }
 
-    if (!profile.companyName.trim() && !profile.companyAddress.trim() && !profile.companyLogo) {
-      showToast('Please fill in your company name or address before saving.', 'warning');
+  // Apply business profile details to state
+  function applyProfileDataToState(profileData) {
+    if (!profileData) return;
+    state.companyName = profileData.companyName || '';
+    state.companyAddress = profileData.companyAddress || '';
+    state.companyEmail = profileData.companyEmail || '';
+    state.companyPhone = profileData.companyPhone || '';
+    state.companyGst = profileData.companyGst || '';
+    state.companyLogo = profileData.companyLogo || '';
+    state.bankName = profileData.bankName || '';
+    state.bankAccount = profileData.bankAccount || '';
+    state.bankIfsc = profileData.bankIfsc || '';
+    state.paymentType = profileData.paymentType || 'Cash';
+    state.termsText = profileData.termsText || state.termsText;
+    state.companySign = profileData.companySign || profileData.companyName || '';
+    if (profileData.taxMode) state.taxMode = profileData.taxMode;
+    if (profileData.taxPercent !== undefined) state.taxPercent = profileData.taxPercent;
+    if (profileData.themeMode) state.themeMode = profileData.themeMode;
+    if (profileData.customColor) state.customColor = profileData.customColor;
+  }
+
+  // Render Business Profiles Dropdown & Header Badge
+  function renderProfileDropdown() {
+    const profiles = Storage.getAllProfiles();
+    const activeId = Storage.getActiveProfileId();
+    const activeProfile = profiles.find(p => p.id === activeId) || (profiles.length > 0 ? profiles[0] : null);
+
+    // Update Header Trigger Label & Icon
+    const headerName = document.getElementById('headerProfileName');
+    const headerIcon = document.getElementById('headerProfileIcon');
+    if (headerName) {
+      headerName.textContent = activeProfile ? activeProfile.name : 'Business Profile';
+    }
+    if (headerIcon) {
+      if (activeProfile && activeProfile.data && activeProfile.data.companyLogo) {
+        headerIcon.innerHTML = `<img src="${activeProfile.data.companyLogo}" alt="" style="width:18px;height:18px;border-radius:4px;object-fit:contain;" />`;
+      } else {
+        headerIcon.textContent = '🏢';
+      }
+    }
+
+    // Update Company Info Card Saved Badge
+    const profileSavedBadge = document.getElementById('profileSavedBadge');
+    const activeBadgeLabel = document.getElementById('activeProfileBadgeLabel');
+    if (profileSavedBadge) {
+      profileSavedBadge.style.display = activeProfile ? 'inline-flex' : 'none';
+      if (activeBadgeLabel && activeProfile) {
+        activeBadgeLabel.textContent = activeProfile.name;
+      }
+    }
+
+    // Update 'Update Current Profile' button visibility in dropdown footer
+    const updateBtn = document.getElementById('updateCurrentProfileBtn');
+    if (updateBtn) {
+      updateBtn.style.display = activeProfile ? 'flex' : 'none';
+      if (activeProfile) {
+        updateBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Update "${escapeHtml(activeProfile.name)}"
+        `;
+      }
+    }
+
+    // Populate profile list in dropdown
+    const listContainer = document.getElementById('profileDropdownList');
+    if (!listContainer) return;
+
+    if (profiles.length === 0) {
+      listContainer.innerHTML = `
+        <div class="profile-empty-hint">
+          No saved profiles yet.<br>Save your business details to switch easily.
+        </div>
+      `;
       return;
     }
 
-    const ok = Storage.saveSellerProfile(profile);
-    if (ok) {
-      updateProfileUIState();
-      showToast('Business profile saved! Your details will auto-fill on new invoices.', 'success', 4000);
-    } else {
-      showToast('Failed to save profile. Local storage might be disabled.', 'error');
-    }
+    listContainer.innerHTML = profiles.map(p => {
+      const isActive = activeProfile && activeProfile.id === p.id;
+      const subtitle = p.data.companyGst ? `GSTIN: ${p.data.companyGst}` : (p.data.companyAddress ? p.data.companyAddress.split('\n')[0] : 'No details');
+      const thumbHtml = p.data.companyLogo
+        ? `<img src="${p.data.companyLogo}" alt="" />`
+        : `🏢`;
+
+      return `
+        <div class="profile-item-row ${isActive ? 'is-active' : ''}" data-profile-id="${p.id}">
+          <div class="profile-item-main" role="button" tabindex="0" title="Switch to ${escapeHtml(p.name)}">
+            <div class="profile-item-thumb">${thumbHtml}</div>
+            <div class="profile-item-details">
+              <span class="profile-item-title">${escapeHtml(p.name)}</span>
+              <span class="profile-item-subtitle">${escapeHtml(subtitle)}</span>
+            </div>
+          </div>
+          <div class="profile-item-actions">
+            ${isActive ? `<svg class="profile-active-check" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+            <button type="button" class="profile-del-btn" data-delete-id="${p.id}" data-profile-name="${escapeHtml(p.name)}" title="Delete profile">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach click listeners to rows and delete buttons
+    listContainer.querySelectorAll('.profile-item-main').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const row = e.target.closest('.profile-item-row');
+        if (row && row.dataset.profileId) {
+          switchProfile(row.dataset.profileId);
+          closeProfileDropdown();
+        }
+      });
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const row = btn.closest('.profile-item-row');
+          if (row && row.dataset.profileId) {
+            switchProfile(row.dataset.profileId);
+            closeProfileDropdown();
+          }
+        }
+      });
+    });
+
+    listContainer.querySelectorAll('.profile-del-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.deleteId;
+        const name = btn.dataset.profileName;
+        promptDeleteProfile(id, name);
+      });
+    });
   }
 
-  // Load saved business profile into active invoice form
-  function loadSellerProfile(notify = true) {
-    const profile = Storage.loadSellerProfile();
-    if (!profile) {
-      if (notify) showToast('No saved profile found. Fill in your business details and click "Save as My Details".', 'info', 4000);
-      return false;
-    }
+  // Switch to selected business profile
+  function switchProfile(profileId, notify = true) {
+    const profile = Storage.getProfileById(profileId);
+    if (!profile) return;
 
-    state.companyName = profile.companyName || '';
-    state.companyAddress = profile.companyAddress || '';
-    state.companyEmail = profile.companyEmail || '';
-    state.companyPhone = profile.companyPhone || '';
-    state.companyGst = profile.companyGst || '';
-    state.companyLogo = profile.companyLogo || '';
-    state.bankName = profile.bankName || '';
-    state.bankAccount = profile.bankAccount || '';
-    state.bankIfsc = profile.bankIfsc || '';
-    state.paymentType = profile.paymentType || 'Cash';
-    state.termsText = profile.termsText || state.termsText;
-    state.companySign = profile.companySign || profile.companyName || '';
-    if (profile.taxMode) state.taxMode = profile.taxMode;
-    if (profile.taxPercent !== undefined) state.taxPercent = profile.taxPercent;
-    if (profile.themeMode) state.themeMode = profile.themeMode;
-    if (profile.customColor) state.customColor = profile.customColor;
-
+    Storage.setActiveProfileId(profileId);
+    applyProfileDataToState(profile.data);
     populateFormFromState();
     debounceAutoSave();
-    if (notify) showToast('Your business profile loaded!', 'success');
-    return true;
+    renderProfileDropdown();
+    if (notify) {
+      showToast(`Switched to profile: ${profile.name}`, 'success');
+    }
   }
 
-  // Update UI indicators based on whether a saved profile exists
-  function updateProfileUIState() {
-    const hasProfile = Storage.hasSellerProfile();
-    const profileSavedBadge = document.getElementById('profileSavedBadge');
-    const loadProfileHeaderBtn = document.getElementById('loadProfileHeaderBtn');
-    const loadProfileCardBtn = document.getElementById('loadProfileCardBtn');
+  // Open the Save Profile Modal
+  function openSaveProfileModal() {
+    const nameInput = document.getElementById('profileNameInput');
+    if (nameInput) {
+      const activeId = Storage.getActiveProfileId();
+      const activeProfile = activeId ? Storage.getProfileById(activeId) : null;
+      nameInput.value = state.companyName ? state.companyName.trim() : (activeProfile ? `${activeProfile.name} (Copy)` : 'My Business');
+    }
+    closeProfileDropdown();
+    openModal('saveProfileModal');
+    if (nameInput) {
+      setTimeout(() => nameInput.focus(), 80);
+    }
+  }
 
-    if (profileSavedBadge) profileSavedBadge.style.display = hasProfile ? 'inline-flex' : 'none';
-    if (loadProfileHeaderBtn) loadProfileHeaderBtn.style.display = hasProfile ? 'inline-flex' : 'none';
-    if (loadProfileCardBtn) loadProfileCardBtn.style.display = hasProfile ? 'inline-flex' : 'none';
+  // Confirm Saving a New Profile
+  function confirmSaveProfile() {
+    const nameInput = document.getElementById('profileNameInput');
+    const name = nameInput ? nameInput.value.trim() : '';
+
+    if (!name) {
+      showToast('Please enter a profile name.', 'warning');
+      if (nameInput) nameInput.focus();
+      return;
+    }
+
+    const data = getBusinessDataFromState();
+    const saved = Storage.saveProfile(name, data);
+    if (saved) {
+      closeModal('saveProfileModal');
+      renderProfileDropdown();
+      showToast(`Business profile "${saved.name}" saved!`, 'success', 3500);
+    } else {
+      showToast('Failed to save profile. Please check browser storage.', 'error');
+    }
+  }
+
+  // Update the Current Active Profile with changes made on screen
+  function updateCurrentActiveProfile() {
+    const activeId = Storage.getActiveProfileId();
+    if (!activeId) {
+      openSaveProfileModal();
+      return;
+    }
+    const current = Storage.getProfileById(activeId);
+    if (!current) {
+      openSaveProfileModal();
+      return;
+    }
+
+    const data = getBusinessDataFromState();
+    const updated = Storage.saveProfile(current.name, data, activeId);
+    if (updated) {
+      closeProfileDropdown();
+      renderProfileDropdown();
+      showToast(`Updated profile "${updated.name}" successfully!`, 'success');
+    }
+  }
+
+  // Delete Profile Confirmation Flow
+  let pendingDeleteProfileId = null;
+
+  function promptDeleteProfile(id, name) {
+    pendingDeleteProfileId = id;
+    const nameTarget = document.getElementById('deleteProfileTargetName');
+    if (nameTarget) nameTarget.textContent = name || 'this profile';
+    closeProfileDropdown();
+    openModal('deleteProfileModal');
+  }
+
+  function confirmDeleteProfile() {
+    if (!pendingDeleteProfileId) return;
+    const deletedId = pendingDeleteProfileId;
+    const ok = Storage.deleteProfile(deletedId);
+    if (ok) {
+      closeModal('deleteProfileModal');
+      const activeId = Storage.getActiveProfileId();
+      if (activeId) {
+        const nextProfile = Storage.getProfileById(activeId);
+        if (nextProfile) {
+          applyProfileDataToState(nextProfile.data);
+          populateFormFromState();
+          debounceAutoSave();
+        }
+      }
+      renderProfileDropdown();
+      showToast('Profile deleted.', 'info');
+    } else {
+      showToast('Could not delete profile.', 'error');
+    }
+    pendingDeleteProfileId = null;
+  }
+
+  // Profile Dropdown Toggle Helpers
+  function closeProfileDropdown() {
+    const wrapper = document.getElementById('profileDropdown');
+    if (wrapper) {
+      const trigger = wrapper.querySelector('.custom-select-trigger');
+      const menu = wrapper.querySelector('.custom-select-menu');
+      if (trigger) {
+        trigger.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+      if (menu) menu.classList.remove('is-open');
+      wrapper.classList.remove('is-open');
+    }
+  }
+
+  function setupProfileDropdown() {
+    const wrapper = document.getElementById('profileDropdown');
+    if (!wrapper) return;
+
+    const trigger = document.getElementById('profileDropdownTrigger');
+    const menu = document.getElementById('profileDropdownMenu');
+
+    if (trigger && menu) {
+      trigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const isOpen = menu.classList.contains('is-open');
+        // Close other open dropdowns
+        document.querySelectorAll('.custom-select-trigger.is-open').forEach(t => {
+          if (t !== trigger) {
+            t.classList.remove('is-open');
+            t.setAttribute('aria-expanded', 'false');
+          }
+        });
+        document.querySelectorAll('.custom-select-menu.is-open').forEach(m => {
+          if (m !== menu) m.classList.remove('is-open');
+        });
+        document.querySelectorAll('.custom-select-wrapper.is-open').forEach(w => {
+          if (w !== wrapper) w.classList.remove('is-open');
+        });
+
+        if (isOpen) {
+          closeProfileDropdown();
+        } else {
+          trigger.classList.add('is-open');
+          trigger.setAttribute('aria-expanded', 'true');
+          menu.classList.add('is-open');
+          wrapper.classList.add('is-open');
+        }
+      });
+    }
   }
 
   // Reset Application
@@ -1014,21 +1253,13 @@
         { id: generateId(), name: '', hs: '', qty: '', rate: '' }
       ];
 
-      // If user has saved profile, re-ensure it is applied
-      const profile = Storage.loadSellerProfile();
-      if (profile) {
-        state.companyName = profile.companyName || state.companyName;
-        state.companyAddress = profile.companyAddress || state.companyAddress;
-        state.companyEmail = profile.companyEmail || state.companyEmail;
-        state.companyPhone = profile.companyPhone || state.companyPhone;
-        state.companyGst = profile.companyGst || state.companyGst;
-        state.companyLogo = profile.companyLogo || state.companyLogo;
-        state.bankName = profile.bankName || state.bankName;
-        state.bankAccount = profile.bankAccount || state.bankAccount;
-        state.bankIfsc = profile.bankIfsc || state.bankIfsc;
-        state.paymentType = profile.paymentType || state.paymentType;
-        state.termsText = profile.termsText || state.termsText;
-        state.companySign = profile.companySign || state.companySign;
+      // If user has active saved profile, re-ensure it is applied
+      const activeId = Storage.getActiveProfileId();
+      if (activeId) {
+        const profile = Storage.getProfileById(activeId);
+        if (profile) {
+          applyProfileDataToState(profile.data);
+        }
       }
 
       populateFormFromState();
@@ -1064,6 +1295,7 @@
     state.companySign = '';
 
     populateFormFromState();
+    renderProfileDropdown();
     showToast('Invoice form reset to blank.', 'info');
   }
 
@@ -1158,16 +1390,28 @@
     const resetBtn = document.getElementById('resetBtn');
     if (resetBtn) resetBtn.addEventListener('click', () => openModal('confirmResetModal'));
 
-    // Profile Save & Load Buttons (Header & Card)
-    const saveProfileHeaderBtn = document.getElementById('saveProfileHeaderBtn');
-    const loadProfileHeaderBtn = document.getElementById('loadProfileHeaderBtn');
+    // Business Profile Actions
+    const openSaveProfileModalBtn = document.getElementById('openSaveProfileModalBtn');
     const saveProfileCardBtn = document.getElementById('saveProfileCardBtn');
-    const loadProfileCardBtn = document.getElementById('loadProfileCardBtn');
+    const updateCurrentProfileBtn = document.getElementById('updateCurrentProfileBtn');
+    const confirmSaveProfileModalBtn = document.getElementById('confirmSaveProfileModalBtn');
+    const confirmDeleteProfileModalBtn = document.getElementById('confirmDeleteProfileModalBtn');
+    const profileNameInput = document.getElementById('profileNameInput');
 
-    if (saveProfileHeaderBtn) saveProfileHeaderBtn.addEventListener('click', saveSellerProfile);
-    if (loadProfileHeaderBtn) loadProfileHeaderBtn.addEventListener('click', () => loadSellerProfile(true));
-    if (saveProfileCardBtn) saveProfileCardBtn.addEventListener('click', saveSellerProfile);
-    if (loadProfileCardBtn) loadProfileCardBtn.addEventListener('click', () => loadSellerProfile(true));
+    if (openSaveProfileModalBtn) openSaveProfileModalBtn.addEventListener('click', openSaveProfileModal);
+    if (saveProfileCardBtn) saveProfileCardBtn.addEventListener('click', openSaveProfileModal);
+    if (updateCurrentProfileBtn) updateCurrentProfileBtn.addEventListener('click', updateCurrentActiveProfile);
+    if (confirmSaveProfileModalBtn) confirmSaveProfileModalBtn.addEventListener('click', confirmSaveProfile);
+    if (confirmDeleteProfileModalBtn) confirmDeleteProfileModalBtn.addEventListener('click', confirmDeleteProfile);
+
+    if (profileNameInput) {
+      profileNameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          confirmSaveProfile();
+        }
+      });
+    }
 
     // Disclaimer & Privacy Links
     const disclaimerLink = document.getElementById('disclaimerLink');
@@ -1271,6 +1515,7 @@
   function initApp() {
     initDefaultState();
     bindFormInputs();
+    setupProfileDropdown();
     initActions();
     initLenis();
 
@@ -1279,14 +1524,16 @@
     if (savedDraft && typeof savedDraft === 'object') {
       Object.assign(state, savedDraft);
     } else {
-      // If starting fresh without a draft, auto-fill from saved seller profile if available
-      const savedProfile = Storage.loadSellerProfile();
-      if (savedProfile) {
-        loadSellerProfile(false);
+      // If starting fresh without a draft, auto-fill from active seller profile if available
+      const activeId = Storage.getActiveProfileId();
+      const profiles = Storage.getAllProfiles();
+      const profileToLoad = (activeId ? Storage.getProfileById(activeId) : null) || (profiles.length > 0 ? profiles[0] : null);
+      if (profileToLoad) {
+        applyProfileDataToState(profileToLoad.data);
       }
     }
 
-    updateProfileUIState();
+    renderProfileDropdown();
     populateFormFromState();
   }
 

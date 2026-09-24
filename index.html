@@ -107,16 +107,36 @@
           </div>
         </div>
 
-        <!-- Seller Profile Actions -->
-        <button type="button" class="btn btn-ghost btn-sm" id="saveProfileHeaderBtn" title="Save current company & payment details as your default business profile">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          Save Profile
-        </button>
+        <!-- Business Profile Selector & Multi-Profile Switcher -->
+        <div class="profile-selector-group" role="group" aria-label="Business Profile">
+          <div class="custom-select-wrapper" id="profileDropdown">
+            <button type="button" class="custom-select-trigger" id="profileDropdownTrigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Select Business Profile">
+              <span class="select-current-content">
+                <span class="select-option-icon" id="headerProfileIcon">🏢</span>
+                <span class="select-current-text" id="headerProfileName">Business Profile</span>
+              </span>
+              <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
 
-        <button type="button" class="btn btn-ghost btn-sm" id="loadProfileHeaderBtn" title="Fill invoice with your saved business profile" style="display: none;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          My Profile
-        </button>
+            <!-- Floating Multi-Profile Dropdown Menu -->
+            <div class="custom-select-menu" id="profileDropdownMenu" role="listbox" aria-label="Saved Business Profiles">
+              <div class="profile-menu-header">Your Saved Businesses</div>
+              <div class="profile-list-container" id="profileDropdownList">
+                <!-- Dynamically rendered list of saved profiles -->
+              </div>
+              <div class="profile-menu-footer">
+                <button type="button" class="profile-menu-action-btn" id="openSaveProfileModalBtn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                  Save Current as New Profile
+                </button>
+                <button type="button" class="profile-menu-action-btn" id="updateCurrentProfileBtn" style="display: none;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  Update Current Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <button type="button" class="btn btn-ghost btn-sm" id="resetBtn" title="Reset invoice or start new bill">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
@@ -148,16 +168,12 @@
             Company Information
           </h2>
           <div class="card-header-actions">
-            <span class="profile-saved-badge" id="profileSavedBadge" style="display: none;" title="Your seller business profile is saved locally">
-              <span class="badge-dot"></span> Profile Saved
+            <span class="profile-saved-badge" id="profileSavedBadge" style="display: none;" title="Active saved business profile">
+              <span class="badge-dot"></span> <span id="activeProfileBadgeLabel">Profile</span>
             </span>
-            <button type="button" class="btn btn-secondary btn-sm" id="saveProfileCardBtn" title="Save this company, bank, and terms as your default business profile">
+            <button type="button" class="btn btn-secondary btn-sm" id="saveProfileCardBtn" title="Save this business details as a profile">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-              Save as My Details
-            </button>
-            <button type="button" class="btn btn-ghost btn-sm" id="loadProfileCardBtn" title="Restore your saved business profile" style="display: none;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
-              Load My Details
+              Save Profile
             </button>
           </div>
         </div>
@@ -718,6 +734,46 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" data-modal-close>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save / Add New Business Profile Modal -->
+  <div class="modal-backdrop" id="saveProfileModal" role="dialog" aria-modal="true" aria-labelledby="saveProfileModalTitle" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="saveProfileModalTitle">Save Business Profile</h3>
+        <button type="button" class="btn btn-ghost btn-sm btn-icon-only" data-modal-close aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:14px;line-height:1.5;">
+          Save your current business details (Company Name, Logo, Address, Contact, GSTIN, Bank info, and Terms) under a recognizable profile label to switch between businesses anytime.
+        </p>
+        <div class="form-group">
+          <label for="profileNameInput" class="form-label">Profile / Business Label</label>
+          <input type="text" id="profileNameInput" class="form-control" placeholder="e.g. Apex Global, Studio LLC, Retail Brand" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmSaveProfileModalBtn">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Profile Confirmation Modal -->
+  <div class="modal-backdrop" id="deleteProfileModal" role="dialog" aria-modal="true" aria-labelledby="deleteProfileModalTitle" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="deleteProfileModalTitle">Delete Business Profile?</h3>
+        <button type="button" class="btn btn-ghost btn-sm btn-icon-only" data-modal-close aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete profile <strong id="deleteProfileTargetName">this business</strong>? This cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="button" class="btn btn-danger-ghost" id="confirmDeleteProfileModalBtn">Delete Profile</button>
       </div>
     </div>
   </div>

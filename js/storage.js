@@ -130,56 +130,136 @@
     }
   }
 
-  const SELLER_PROFILE_KEY = 'billvex_seller_profile_v1';
+  const PROFILES_COLLECTION_KEY = 'billvex_profiles_collection_v2';
+  const ACTIVE_PROFILE_ID_KEY = 'billvex_active_profile_id_v2';
 
   /**
-   * Saves the seller's reusable business profile.
-   * @param {Object} profile
-   * @returns {boolean}
+   * Reads all saved business profiles.
+   * @returns {Array<Object>}
    */
-  function saveSellerProfile(profile) {
+  function getAllProfiles() {
     try {
-      localStorage.setItem(SELLER_PROFILE_KEY, JSON.stringify(profile));
-      return true;
+      const raw = localStorage.getItem(PROFILES_COLLECTION_KEY);
+      if (!raw) return [];
+      const list = JSON.parse(raw);
+      return Array.isArray(list) ? list : [];
     } catch (e) {
-      return false;
+      return [];
     }
   }
 
   /**
-   * Loads the saved seller profile.
+   * Retrieves a single profile by its unique ID.
+   * @param {string} id
    * @returns {Object|null}
    */
-  function loadSellerProfile() {
+  function getProfileById(id) {
+    if (!id) return null;
+    const all = getAllProfiles();
+    return all.find(p => p.id === id) || null;
+  }
+
+  /**
+   * Saves or updates a business profile.
+   * @param {string} name - Profile display name (e.g. "Apex Technologies")
+   * @param {Object} data - Company data fields
+   * @param {string|null} id - Existing profile ID if updating
+   * @returns {Object|null} The saved profile object
+   */
+  function saveProfile(name, data, id = null) {
     try {
-      const raw = localStorage.getItem(SELLER_PROFILE_KEY);
-      if (!raw) return null;
-      return JSON.parse(raw);
+      const all = getAllProfiles();
+      const profileId = id || ('prof_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5));
+      const existingIdx = all.findIndex(p => p.id === profileId);
+
+      const profileObj = {
+        id: profileId,
+        name: (name || data.companyName || 'Business Profile').trim(),
+        updatedAt: new Date().toISOString(),
+        data: data
+      };
+
+      if (existingIdx >= 0) {
+        profileObj.createdAt = all[existingIdx].createdAt || profileObj.updatedAt;
+        all[existingIdx] = profileObj;
+      } else {
+        profileObj.createdAt = profileObj.updatedAt;
+        all.unshift(profileObj);
+      }
+
+      localStorage.setItem(PROFILES_COLLECTION_KEY, JSON.stringify(all));
+      localStorage.setItem(ACTIVE_PROFILE_ID_KEY, profileId);
+      return profileObj;
     } catch (e) {
       return null;
     }
   }
 
   /**
-   * Checks if a seller profile exists in local storage.
+   * Deletes a business profile by ID.
+   * @param {string} id
    * @returns {boolean}
    */
-  function hasSellerProfile() {
-    return Boolean(localStorage.getItem(SELLER_PROFILE_KEY));
-  }
-
-  /**
-   * Clears the saved seller profile.
-   * @returns {boolean}
-   */
-  function clearSellerProfile() {
+  function deleteProfile(id) {
     try {
-      localStorage.removeItem(SELLER_PROFILE_KEY);
+      let all = getAllProfiles();
+      all = all.filter(p => p.id !== id);
+      localStorage.setItem(PROFILES_COLLECTION_KEY, JSON.stringify(all));
+      
+      const activeId = getActiveProfileId();
+      if (activeId === id) {
+        if (all.length > 0) {
+          localStorage.setItem(ACTIVE_PROFILE_ID_KEY, all[0].id);
+        } else {
+          localStorage.removeItem(ACTIVE_PROFILE_ID_KEY);
+        }
+      }
       return true;
     } catch (e) {
       return false;
     }
   }
+
+  /**
+   * Retrieves the ID of the currently active business profile.
+   * @returns {string|null}
+   */
+  function getActiveProfileId() {
+    try {
+      return localStorage.getItem(ACTIVE_PROFILE_ID_KEY) || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Sets the active business profile ID.
+   * @param {string} id
+   * @returns {boolean}
+   */
+  function setActiveProfileId(id) {
+    try {
+      if (id) {
+        localStorage.setItem(ACTIVE_PROFILE_ID_KEY, id);
+      } else {
+        localStorage.removeItem(ACTIVE_PROFILE_ID_KEY);
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Automatic legacy single-profile migration
+  try {
+    const legacy = localStorage.getItem('billvex_seller_profile_v1');
+    if (legacy && getAllProfiles().length === 0) {
+      const parsed = JSON.parse(legacy);
+      if (parsed && typeof parsed === 'object') {
+        saveProfile(parsed.companyName || 'My Business', parsed);
+      }
+    }
+  } catch (e) {}
 
   /**
    * Clears all local application storage.
@@ -189,7 +269,9 @@
       localStorage.removeItem(COUNTER_KEY);
       localStorage.removeItem(DRAFT_KEY);
       localStorage.removeItem(PREFS_KEY);
-      localStorage.removeItem(SELLER_PROFILE_KEY);
+      localStorage.removeItem(PROFILES_COLLECTION_KEY);
+      localStorage.removeItem(ACTIVE_PROFILE_ID_KEY);
+      localStorage.removeItem('billvex_seller_profile_v1');
       return true;
     } catch (e) {
       return false;
@@ -204,10 +286,12 @@
     saveDraft: saveDraft,
     loadDraft: loadDraft,
     clearDraft: clearDraft,
-    saveSellerProfile: saveSellerProfile,
-    loadSellerProfile: loadSellerProfile,
-    hasSellerProfile: hasSellerProfile,
-    clearSellerProfile: clearSellerProfile,
+    getAllProfiles: getAllProfiles,
+    getProfileById: getProfileById,
+    saveProfile: saveProfile,
+    deleteProfile: deleteProfile,
+    getActiveProfileId: getActiveProfileId,
+    setActiveProfileId: setActiveProfileId,
     savePreferences: savePreferences,
     loadPreferences: loadPreferences,
     clearAllData: clearAllData,
