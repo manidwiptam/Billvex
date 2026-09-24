@@ -994,47 +994,6 @@
     if (loadProfileCardBtn) loadProfileCardBtn.style.display = hasProfile ? 'inline-flex' : 'none';
   }
 
-  // Sample Demo Data Loader
-  function loadDemoData() {
-    state.companyName = 'Apex Global Technologies Pvt. Ltd.';
-    state.companyAddress = '402 Cyber Heights, Tech City, Sector 5\nBengaluru, Karnataka - 560100';
-    state.companyEmail = 'billing@apexglobal.io';
-    state.companyPhone = '+91 98765 43210';
-    state.companyGst = '29ABCDE1234F1Z5';
-    
-    state.invoiceNo = `INV-${Storage.nextAvailableNumber()}`;
-    state.invoiceDate = getTodayDateString();
-    state.saleType = 'TAX INVOICE / INTERSTATE SALE';
-    
-    state.buyerName = 'Zenith Retail & Logistics LLP';
-    state.buyerAddress = 'Plot 18, MIDC Industrial Area\nAndheri East, Mumbai, Maharashtra - 400093';
-    state.buyerGst = '27XYZAB5678C1Z2';
-    state.stateCode = '27 (Maharashtra)';
-    state.vehicleNo = 'MH-02-CX-8899';
-    state.contact = '+91 91234 56789';
-    
-    state.taxMode = 'igst';
-    state.taxPercent = 18;
-    
-    state.paymentType = 'Online';
-    state.bankName = 'HDFC Bank Ltd.';
-    state.bankAccount = '50200012345678';
-    state.bankIfsc = 'HDFC0001234';
-    
-    state.termsText = '1. Goods once sold will not be accepted back.\n2. Interest @ 18% p.a. will be charged for delayed payments beyond 30 days.\n3. Subject to Bengaluru jurisdiction.';
-    state.companySign = 'Apex Global Technologies Pvt. Ltd.';
-
-    state.items = [
-      { id: generateId(), name: 'Enterprise Cloud Server Instance (Monthly)', hs: '998313', qty: 2, rate: 12500 },
-      { id: generateId(), name: 'Data Security & SSL Annual License', hs: '998314', qty: 1, rate: 8400 },
-      { id: generateId(), name: 'DevOps Onboarding & System Setup Services', hs: '998319', qty: 1, rate: 15000 },
-    ];
-
-    populateFormFromState();
-    debounceAutoSave();
-    showToast('Demo invoice data loaded.', 'success');
-  }
-
   // Reset Application
   function resetAll(mode = 'all') {
     Storage.clearDraft();
@@ -1209,10 +1168,6 @@
     if (loadProfileHeaderBtn) loadProfileHeaderBtn.addEventListener('click', () => loadSellerProfile(true));
     if (saveProfileCardBtn) saveProfileCardBtn.addEventListener('click', saveSellerProfile);
     if (loadProfileCardBtn) loadProfileCardBtn.addEventListener('click', () => loadSellerProfile(true));
-
-    // Demo Data Button
-    const loadDemoBtn = document.getElementById('loadDemoBtn');
-    if (loadDemoBtn) loadDemoBtn.addEventListener('click', loadDemoData);
 
     // Disclaimer & Privacy Links
     const disclaimerLink = document.getElementById('disclaimerLink');
