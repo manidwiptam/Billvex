@@ -130,6 +130,57 @@
     }
   }
 
+  const SELLER_PROFILE_KEY = 'billvex_seller_profile_v1';
+
+  /**
+   * Saves the seller's reusable business profile.
+   * @param {Object} profile
+   * @returns {boolean}
+   */
+  function saveSellerProfile(profile) {
+    try {
+      localStorage.setItem(SELLER_PROFILE_KEY, JSON.stringify(profile));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Loads the saved seller profile.
+   * @returns {Object|null}
+   */
+  function loadSellerProfile() {
+    try {
+      const raw = localStorage.getItem(SELLER_PROFILE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Checks if a seller profile exists in local storage.
+   * @returns {boolean}
+   */
+  function hasSellerProfile() {
+    return Boolean(localStorage.getItem(SELLER_PROFILE_KEY));
+  }
+
+  /**
+   * Clears the saved seller profile.
+   * @returns {boolean}
+   */
+  function clearSellerProfile() {
+    try {
+      localStorage.removeItem(SELLER_PROFILE_KEY);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   /**
    * Clears all local application storage.
    */
@@ -138,6 +189,7 @@
       localStorage.removeItem(COUNTER_KEY);
       localStorage.removeItem(DRAFT_KEY);
       localStorage.removeItem(PREFS_KEY);
+      localStorage.removeItem(SELLER_PROFILE_KEY);
       return true;
     } catch (e) {
       return false;
@@ -152,6 +204,10 @@
     saveDraft: saveDraft,
     loadDraft: loadDraft,
     clearDraft: clearDraft,
+    saveSellerProfile: saveSellerProfile,
+    loadSellerProfile: loadSellerProfile,
+    hasSellerProfile: hasSellerProfile,
+    clearSellerProfile: clearSellerProfile,
     savePreferences: savePreferences,
     loadPreferences: loadPreferences,
     clearAllData: clearAllData,

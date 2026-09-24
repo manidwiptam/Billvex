@@ -651,6 +651,8 @@ h1, h2, h3, h4 {
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--glass-border-dark);
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .card-title {
@@ -661,6 +663,26 @@ h1, h2, h3, h4 {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-saved-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--success);
+  background: var(--success-bg);
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(16, 185, 129, 0.28);
 }
 
 .card-title svg {

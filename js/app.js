@@ -907,12 +907,91 @@
   }
 
   // Debounced Draft Auto-saving
+  // Debounced Draft Auto-saving
   let autoSaveTimeout = null;
   function debounceAutoSave() {
     clearTimeout(autoSaveTimeout);
     autoSaveTimeout = setTimeout(() => {
       Storage.saveDraft(state);
     }, 600);
+  }
+
+  // Save current business details into permanent local storage
+  function saveSellerProfile() {
+    const profile = {
+      companyName: state.companyName || '',
+      companyAddress: state.companyAddress || '',
+      companyEmail: state.companyEmail || '',
+      companyPhone: state.companyPhone || '',
+      companyGst: state.companyGst || '',
+      companyLogo: state.companyLogo || '',
+      bankName: state.bankName || '',
+      bankAccount: state.bankAccount || '',
+      bankIfsc: state.bankIfsc || '',
+      paymentType: state.paymentType || 'Cash',
+      termsText: state.termsText || '',
+      companySign: state.companySign || '',
+      taxMode: state.taxMode || 'cgst',
+      taxPercent: state.taxPercent !== undefined ? state.taxPercent : 18,
+      themeMode: state.themeMode || 'hydrangea',
+      customColor: state.customColor || '#6366f1',
+    };
+
+    if (!profile.companyName.trim() && !profile.companyAddress.trim() && !profile.companyLogo) {
+      showToast('Please fill in your company name or address before saving.', 'warning');
+      return;
+    }
+
+    const ok = Storage.saveSellerProfile(profile);
+    if (ok) {
+      updateProfileUIState();
+      showToast('Business profile saved! Your details will auto-fill on new invoices.', 'success', 4000);
+    } else {
+      showToast('Failed to save profile. Local storage might be disabled.', 'error');
+    }
+  }
+
+  // Load saved business profile into active invoice form
+  function loadSellerProfile(notify = true) {
+    const profile = Storage.loadSellerProfile();
+    if (!profile) {
+      if (notify) showToast('No saved profile found. Fill in your business details and click "Save as My Details".', 'info', 4000);
+      return false;
+    }
+
+    state.companyName = profile.companyName || '';
+    state.companyAddress = profile.companyAddress || '';
+    state.companyEmail = profile.companyEmail || '';
+    state.companyPhone = profile.companyPhone || '';
+    state.companyGst = profile.companyGst || '';
+    state.companyLogo = profile.companyLogo || '';
+    state.bankName = profile.bankName || '';
+    state.bankAccount = profile.bankAccount || '';
+    state.bankIfsc = profile.bankIfsc || '';
+    state.paymentType = profile.paymentType || 'Cash';
+    state.termsText = profile.termsText || state.termsText;
+    state.companySign = profile.companySign || profile.companyName || '';
+    if (profile.taxMode) state.taxMode = profile.taxMode;
+    if (profile.taxPercent !== undefined) state.taxPercent = profile.taxPercent;
+    if (profile.themeMode) state.themeMode = profile.themeMode;
+    if (profile.customColor) state.customColor = profile.customColor;
+
+    populateFormFromState();
+    debounceAutoSave();
+    if (notify) showToast('Your business profile loaded!', 'success');
+    return true;
+  }
+
+  // Update UI indicators based on whether a saved profile exists
+  function updateProfileUIState() {
+    const hasProfile = Storage.hasSellerProfile();
+    const profileSavedBadge = document.getElementById('profileSavedBadge');
+    const loadProfileHeaderBtn = document.getElementById('loadProfileHeaderBtn');
+    const loadProfileCardBtn = document.getElementById('loadProfileCardBtn');
+
+    if (profileSavedBadge) profileSavedBadge.style.display = hasProfile ? 'inline-flex' : 'none';
+    if (loadProfileHeaderBtn) loadProfileHeaderBtn.style.display = hasProfile ? 'inline-flex' : 'none';
+    if (loadProfileCardBtn) loadProfileCardBtn.style.display = hasProfile ? 'inline-flex' : 'none';
   }
 
   // Sample Demo Data Loader
@@ -957,8 +1036,49 @@
   }
 
   // Reset Application
-  function resetAll() {
+  function resetAll(mode = 'all') {
     Storage.clearDraft();
+
+    if (mode === 'itemsOnly') {
+      // Clear only buyer information and item rows, preserving seller identity
+      const counter = Storage.nextAvailableNumber();
+      state.invoiceNo = `INV-${counter}`;
+      state.invoiceDate = getTodayDateString();
+      state.buyerName = '';
+      state.buyerAddress = '';
+      state.buyerGst = '';
+      state.stateCode = '';
+      state.vehicleNo = '';
+      state.contact = '';
+      state.items = [
+        { id: generateId(), name: '', hs: '', qty: '', rate: '' },
+        { id: generateId(), name: '', hs: '', qty: '', rate: '' }
+      ];
+
+      // If user has saved profile, re-ensure it is applied
+      const profile = Storage.loadSellerProfile();
+      if (profile) {
+        state.companyName = profile.companyName || state.companyName;
+        state.companyAddress = profile.companyAddress || state.companyAddress;
+        state.companyEmail = profile.companyEmail || state.companyEmail;
+        state.companyPhone = profile.companyPhone || state.companyPhone;
+        state.companyGst = profile.companyGst || state.companyGst;
+        state.companyLogo = profile.companyLogo || state.companyLogo;
+        state.bankName = profile.bankName || state.bankName;
+        state.bankAccount = profile.bankAccount || state.bankAccount;
+        state.bankIfsc = profile.bankIfsc || state.bankIfsc;
+        state.paymentType = profile.paymentType || state.paymentType;
+        state.termsText = profile.termsText || state.termsText;
+        state.companySign = profile.companySign || state.companySign;
+      }
+
+      populateFormFromState();
+      debounceAutoSave();
+      showToast('New invoice created! Your business details are preserved.', 'success');
+      return;
+    }
+
+    // Full reset to completely blank form
     initDefaultState();
     state.companyName = '';
     state.companyAddress = '';
@@ -985,7 +1105,7 @@
     state.companySign = '';
 
     populateFormFromState();
-    showToast('Invoice fields reset to default.', 'info');
+    showToast('Invoice form reset to blank.', 'info');
   }
 
   // PDF Export Flow
@@ -1079,6 +1199,17 @@
     const resetBtn = document.getElementById('resetBtn');
     if (resetBtn) resetBtn.addEventListener('click', () => openModal('confirmResetModal'));
 
+    // Profile Save & Load Buttons (Header & Card)
+    const saveProfileHeaderBtn = document.getElementById('saveProfileHeaderBtn');
+    const loadProfileHeaderBtn = document.getElementById('loadProfileHeaderBtn');
+    const saveProfileCardBtn = document.getElementById('saveProfileCardBtn');
+    const loadProfileCardBtn = document.getElementById('loadProfileCardBtn');
+
+    if (saveProfileHeaderBtn) saveProfileHeaderBtn.addEventListener('click', saveSellerProfile);
+    if (loadProfileHeaderBtn) loadProfileHeaderBtn.addEventListener('click', () => loadSellerProfile(true));
+    if (saveProfileCardBtn) saveProfileCardBtn.addEventListener('click', saveSellerProfile);
+    if (loadProfileCardBtn) loadProfileCardBtn.addEventListener('click', () => loadSellerProfile(true));
+
     // Demo Data Button
     const loadDemoBtn = document.getElementById('loadDemoBtn');
     if (loadDemoBtn) loadDemoBtn.addEventListener('click', loadDemoData);
@@ -1121,10 +1252,18 @@
     });
 
     // Modal Action Handlers
-    const confirmResetBtn = document.getElementById('confirmResetBtn');
-    if (confirmResetBtn) {
-      confirmResetBtn.addEventListener('click', () => {
-        resetAll();
+    const confirmResetAllBtn = document.getElementById('confirmResetAllBtn');
+    if (confirmResetAllBtn) {
+      confirmResetAllBtn.addEventListener('click', () => {
+        resetAll('all');
+        closeModal('confirmResetModal');
+      });
+    }
+
+    const confirmResetItemsOnlyBtn = document.getElementById('confirmResetItemsOnlyBtn');
+    if (confirmResetItemsOnlyBtn) {
+      confirmResetItemsOnlyBtn.addEventListener('click', () => {
+        resetAll('itemsOnly');
         closeModal('confirmResetModal');
       });
     }
@@ -1184,8 +1323,15 @@
     const savedDraft = Storage.loadDraft();
     if (savedDraft && typeof savedDraft === 'object') {
       Object.assign(state, savedDraft);
+    } else {
+      // If starting fresh without a draft, auto-fill from saved seller profile if available
+      const savedProfile = Storage.loadSellerProfile();
+      if (savedProfile) {
+        loadSellerProfile(false);
+      }
     }
 
+    updateProfileUIState();
     populateFormFromState();
   }
 

@@ -10,6 +10,7 @@ A modern, fast, responsive billing and invoice generator designed as a clean, lo
 - **Hydrangea Theme & Glassmorphism**: Ultra-premium translucent frosted glass interfaces (`backdrop-filter: blur(24px)`), ambient lilac & periwinkle backdrop glows, layered lighting depth, and spring easing.
 - **Signature Typography**: Distinctive **Fugaz One** display typeface for brand & section headers paired with clean, highly legible **Work Sans** for body, numeric tables, and billing documents.
 - **Lenis Smooth Inertial Scrolling**: Fluid, hardware-accelerated momentum scrolling powered by the modern Lenis library (with automatic reduced-motion fallback).
+- **Seller Business Profile & 1-Click Auto-Fill**: Save your company name, logo, address, GSTIN, bank details, terms, and signature into local storage so you never have to re-type your business details on every new invoice.
 - **Dual Theme Engine**: Choose between the signature **Billvex (Default)** periwinkle/indigo palette (`#6366f1`) or the **Custom / Logo Brand** theme, which automatically samples and applies the primary accent color from your uploaded logo (with manual fine-tuning).
 - **Company Branding**: Customizable business profile, instant logo upload with base64 client rendering, and automatic brand color extraction.
 - **Invoice Metadata**: Auto-incrementing sequential invoice numbering with local persistence, date pickers, and configurable sale/invoice classifications.
