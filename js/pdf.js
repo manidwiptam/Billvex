@@ -87,18 +87,31 @@
       const imgHeightMM = (canvas.height / 2.5) * 25.4 / dpi;
 
       const margin = 8; // mm margin
-      let drawWidth = pageWidth - (margin * 2);
-      let drawHeight = (imgHeightMM * drawWidth) / imgWidthMM;
+      const usablePageWidth = pageWidth - (margin * 2);
+      const usablePageHeight = pageHeight - (margin * 2);
+      const imgHeightInPdf = (canvas.height * usablePageWidth) / canvas.width;
 
-      if (drawHeight > (pageHeight - (margin * 2))) {
-        drawHeight = pageHeight - (margin * 2);
-        drawWidth = (imgWidthMM * drawHeight) / imgHeightMM;
+      if (imgHeightInPdf <= usablePageHeight + 2) {
+        // Fits cleanly on a single A4 page
+        const x = margin;
+        const y = margin;
+        pdf.addImage(imgData, 'PNG', x, y, usablePageWidth, imgHeightInPdf, undefined, 'FAST');
+      } else {
+        // Multi-page PDF pagination for lengthy itemized invoices
+        let heightLeft = imgHeightInPdf;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', margin, margin + position, usablePageWidth, imgHeightInPdf, undefined, 'FAST');
+        heightLeft -= usablePageHeight;
+
+        while (heightLeft > 0) {
+          position = -(imgHeightInPdf - heightLeft);
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', margin, margin + position, usablePageWidth, imgHeightInPdf, undefined, 'FAST');
+          heightLeft -= usablePageHeight;
+        }
       }
 
-      const x = (pageWidth - drawWidth) / 2;
-      const y = margin;
-
-      pdf.addImage(imgData, 'PNG', x, y, drawWidth, drawHeight, undefined, 'FAST');
       pdf.save(filename);
 
       onFinish({ success: true, filename: filename });
